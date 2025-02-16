@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>456</class>
+ <widget class="QDialog" name="456">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>946</width>
+    <height>684</height>
+   </rect>
+  </property>
+  <property name="font">
+   <font>
+    <family>Times New Roman</family>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>金屬中心</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QWidget {
+    background-color: #F5DEB3; /* 米黃色背景 (Wheat) */
+}
+
+</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="6" column="0">
+    <widget class="QLabel" name="label">
+     <property name="maximumSize">
+      <size>
+       <width>350</width>
+       <height>350</height>
+      </size>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="pixmap">
+      <pixmap>NfuLogo.png</pixmap>
+     </property>
+     <property name="scaledContents">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QPushButton" name="pointBtn">
+     <property name="font">
+      <font>
+       <family>標楷體</family>
+      </font>
+     </property>
+     <property name="text">
+      <string>點刪除</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QPushButton" name="load">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>5</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>45</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>Times New Roman</family>
+       <pointsize>16</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton {
+    background-color: #24B375;
+    color: white;
+    border-radius: 7px;
+}
+</string>
+     </property>
+     <property name="text">
+      <string>Load file</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QPushButton" name="boxBtn">
+     <property name="font">
+      <font>
+       <family>標楷體</family>
+      </font>
+     </property>
+     <property name="text">
+      <string>矩形刪除</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QPushButton" name="lassoBtn">
+     <property name="font">
+      <font>
+       <family>標楷體</family>
+      </font>
+     </property>
+     <property name="text">
+      <string>套索刪除</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1" rowspan="6">
+    <widget class="QWidget" name="vtkWidgetContainer" native="true"/>
+   </item>
+   <item row="5" column="0">
+    <widget class="QPushButton" name="saveBtn">
+     <property name="font">
+      <font>
+       <family>標楷體</family>
+      </font>
+     </property>
+     <property name="text">
+      <string>儲存檔案</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
