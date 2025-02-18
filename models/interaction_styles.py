@@ -301,94 +301,157 @@ class LassoInteractor(vtkInteractorStyleTrackballCamera):
         print(f"selection point length: {self.selection_point.GetNumberOfPoints()}")
         print(f"after redo dijkstra path length: {len(self.dijkstra_path)}")
         print(f"------------redo detail end------------")
-# 點選取類別
+# 點選取類別，繼承vtkInteractorStyleTrackballCamera
 class PointInteractor(vtkInteractorStyleTrackballCamera):
+    # poly_data是輸入的3D模型
     def __init__(self,poly_data):
         super().__init__()
+        # 初始化輸入資料，用於後續計算在物體表面選取的點
         self.poly_data = poly_data
+        # 初始化最短路徑，用於計算點選的最短路徑
         self.dijkstra = vtk.vtkDijkstraGraphGeodesicPath()
-        self.dijkstra_path_point = vtk.vtkPoints()
+        # dijkstra最短路徑使用的資料是poly_data
         self.dijkstra.SetInputData(self.poly_data)
+        # 最短路徑存放所有點的類
         self.idList = vtk.vtkIdList()
+        # 存放所有視覺化球體的列表
         self.sphereActors = []
+        # 存放所有視覺化線段的列表
         self.lineActors = []
+        # 點選點的列表
         self.pathList = []
+        # 最短路徑的點的列表，也就是實際的線段
         self.meshNumList = []
+        # redo線段視覺化的列表
         self.redoLineActors = []
+        # redo球體視覺化的列表
         self.redoSphereActors = []
+        # redo點選的列表
         self.redoPathList = []
+        # redo實際線段的列表
         self.redoMeshNumList = []
+        # 最短路徑每一點的列表
         self.dijkstra_path_arr = []
-        self.selectionPoints = vtk.vtkPoints()
+        # mesh作為選取範圍的資料
+        self.selectionCells = vtk.vtkCellArray()
+        # 選取範圍
         self.loop = vtk.vtkImplicitSelectionLoop()
-
+        # 第一個參數是事件名稱，第二個參數是事件的回調函數
         self.AddObserver("LeftButtonPressEvent", self.onLeftButtonDown)
     # 滑鼠左鍵按下
     def onLeftButtonDown(self,obj,event,interactor,renderer):
-        
+        # 初始化點選位置座標
         clickPos = interactor.GetEventPosition()
+        # 初始化靠近選取位置的網格
         picker = vtk.vtkCellPicker()
+        # 選取位置轉成3D座標
         picker.Pick(clickPos[0],clickPos[1],0,renderer)
         print(f"point coord: {self.poly_data.GetPoint(picker.GetPointId())}")
+        # 不是選取輸入物件不做事
         if(picker.GetCellId() != -1):
             # 視覺化選取點
             self.pathList.append(picker.GetPointId())
+            # 點選位置座標
             point_position = self.poly_data.GetPoint(picker.GetPointId())
+            # 實體化球體
             sphereSource = vtk.vtkSphereSource()
+            # 球體中心位置設定點選座標
             sphereSource.SetCenter(point_position)
+            # 半徑設定0.02
             sphereSource.SetRadius(0.02)
+            # 將圓形立體資料轉換成平面圖形資料
             sphereMapper = vtk.vtkPolyDataMapper()
+            # SetInputConnection()動態傳遞點選的球體；GetOutputPort()取得球體
             sphereMapper.SetInputConnection(sphereSource.GetOutputPort())
+            # 將球體資料轉換成視覺化物件
             self.sphereActor = vtk.vtkActor()
+            # actor放入mapper，轉換成適合渲染的物件
             self.sphereActor.SetMapper(sphereMapper)
+            # 設定球體顏色為紅色
             self.sphereActor.GetProperty().SetColor(1.0, 0.0, 0.0)
+            # 將actor放入渲染器
             renderer.AddActor(self.sphereActor)
+            # undo、消除的列表
             self.sphereActors.append(self.sphereActor)
             print(f"pathList: {self.pathList}")
-            # 求最小路徑
+            
+            # 求最小路徑，至少一個點以上才能求最短路徑
             if len(self.pathList) > 1:
+                # 最短路徑起始點是點選的倒數第二個點
                 self.dijkstra.SetStartVertex(self.pathList[-2])
+                # 最短路徑結束點是點選的最後一個點
                 self.dijkstra.SetEndVertex(self.pathList[-1])
+                # 更新最短路徑
                 self.dijkstra.Update()
 
+                # 取得最短路徑的點
                 self.idList = self.dijkstra.GetIdList()
-                for i in range(self.idList.GetNumberOfIds()-1,-1,-1):
-                    print(f"index{-i} point id: {self.idList.GetId(i)}|point coord: {self.poly_data.GetPoint(self.idList.GetId(i))}")
+                for i in range(self.idList.GetNumberOfIds()-1):
+                    print(f"index{i} point id: {self.idList.GetId(i)}|point coord: {self.poly_data.GetPoint(self.idList.GetId(i))}")
+                # 最短路徑實際數量
                 self.meshNumList.append(self.idList.GetNumberOfIds())
                 print(f"meshNumList: {self.meshNumList}")
-                for i in range(self.idList.GetNumberOfIds() -1):
+                # 視覺化最短路徑
+                for i in range(self.idList.GetNumberOfIds()-1):
+                    # 實體化線段
                     lineSource = vtk.vtkLineSource()
+                    # 從點選的最短路徑的列表取得索引值為i的點作為線段的起始點
                     lineSource.SetPoint1(self.poly_data.GetPoint(self.idList.GetId(i)))
+                    # 從點選的最短路徑的列表取得索引值為i+1的點作為線段的結束點
                     lineSource.SetPoint2(self.poly_data.GetPoint(self.idList.GetId(i+1)))
+                    # 將線段資料轉換成平面圖形資料
                     lineMapper = vtk.vtkPolyDataMapper()
+                    # SetInputConnection()動態傳遞點選的線段；GetOutputPort()取得線段
                     lineMapper.SetInputConnection(lineSource.GetOutputPort())
+                    # 將線段資料轉換成視覺化物件
                     self.lineActor = vtk.vtkActor()
+                    # actor放入mapper，轉換成適合渲染的物件
                     self.lineActor.SetMapper(lineMapper)
+                    # 設定線段顏色為紅色
                     self.lineActor.GetProperty().SetColor(1.0, 0.0, 0.0)
+                    # 將actor放入渲染器
                     renderer.AddActor(self.lineActor)
+                    # undo、消除的列表
                     self.lineActors.append(self.lineActor)
+                    # 視覺化最短路徑
                     interactor.GetRenderWindow().Render()
+                    # 添加所有最短路徑的點到dijkstra_path_arr
                     self.dijkstra_path_arr.append(self.idList.GetId(i))
+            # 去除重複的最短路徑點
             self.dijkstra_path_arr=list(set(self.dijkstra_path_arr))
-            print(f"Here is the dijkstra_path_arr: {self.dijkstra_path_arr}")
+            self.dijkstra_path_arr = list(reversed(self.dijkstra_path_arr))
+            print(f" original dijkstra_path_arr: {self.dijkstra_path_arr}")
+            
+            # 渲染最短路徑
             interactor.GetRenderWindow().Render()
 
     # 封閉選取範圍
     def closeArea(self,interactor,renderer):
-        self.selectionPoints.SetNumberOfPoints(len(self.dijkstra_path_arr))
-        for i in range(len(self.dijkstra_path_arr)):
-            self.selectionPoints.SetPoint(i,self.poly_data.GetPoint(self.dijkstra_path_arr[i]))
-        self.loop.SetLoop(self.selectionPoints)
-        clipper = vtk.vtkClipPolyData()
-        clipper.SetInputData(self.poly_data)
-        clipper.SetClipFunction(self.loop)
-        clipper.InsideOutOn()
-        clipper.Update()
-        clipperMapper = vtk.vtkPolyDataMapper()
-        clipperMapper.SetInputConnection(clipper.GetOutputPort())
-        clipperActor = vtk.vtkActor()
-        clipperActor.SetMapper(clipperMapper)
-        renderer.AddActor(clipperActor)
+        # 將最後一個點與第一個點連接
+
+        # 如果點選的點數小於2，不做事
+        if len(self.pathList) < 2:
+            return
+        # 實體化線段
+        lineSource = vtk.vtkLineSource()
+        # 從self.dijkstra_path_arr取得最後一個點作為封閉線段起始點
+        lineSource.SetPoint1(self.poly_data.GetPoint(self.dijkstra_path_arr[-1]))
+        print(f"self.dijkstra_path_arr[-1]: {self.dijkstra_path_arr[-1]}")
+        # 將self.pathList取德第一個點作為封閉線段結束點
+        lineSource.SetPoint2(self.poly_data.GetPoint(self.pathList[0]))
+        print(f"self.dijkstra_path_arr[0]: {self.pathList[0]}")
+        # 將線段資料轉換成平面圖形資料
+        lineMapper = vtk.vtkPolyDataMapper()
+        # SetInputConnection()動態傳遞點選的線段；GetOutputPort()取得線段
+        lineMapper.SetInputConnection(lineSource.GetOutputPort())
+        # 將線段資料轉換成視覺化物件
+        self.lineActor = vtk.vtkActor()
+        # actor放入mapper，轉換成適合渲染的物件
+        self.lineActor.SetMapper(lineMapper)
+        # 設定線段顏色為紅色
+        self.lineActor.GetProperty().SetColor(1.0, 0.0, 0.0)
+        # 將actor放入渲染器
+        renderer.AddActor(self.lineActor)
         interactor.GetRenderWindow().Render()
 
     # 清除選取輔助樣式
