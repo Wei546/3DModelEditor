@@ -19,38 +19,46 @@ class HighlightInteractorStyle(vtkInteractorStyleRubberBand3D):
         self.start_position = None
         # 矩形範圍放開起始點
         self.end_position = None
+        # 
         self.geometry_filter = None
         self.selected_poly_data = None
         self.extract_geometry = None
-        # 實體化點、套索選取類別
+        # 實體化點選取類別
         self.point_func = PointInteractor(poly_data)
+        # 實體化套索選取類別
         self.lasso_func = LassoInteractor(poly_data)
         # 選取範圍
         self.mapper = vtk.vtkPolyDataMapper()
         self.actor = vtk.vtkActor()
         self.boxArea = vtk.vtkAreaPicker()
-        # 選取模式監聽器
+        # 鍵盤按下監聽器
         self.AddObserver("KeyPressEvent", self.modeSltKeyPress)
+        # 滑鼠左鍵放開監聽器
         self.AddObserver("LeftButtonReleaseEvent", self.onLeftButtonUp)
+        # 滑鼠左鍵按下監聽器
         self.AddObserver("LeftButtonPressEvent", self.onLeftButtonDown)
-        # 穿透實體化
-        self.visibleSlt = VisibleSlt()
+        
         # 穿透按鈕開關
         self.throughBtnMode = False
 
 
     # 選取模式
     def modeSltKeyPress(self, obj, event):
+        # 取得按下的按鍵
         self.key = self.GetInteractor().GetKeySym()
         # 矩形選取模式
         if self.key == "c" or self.key == "C":
+            # 如果矩形選取模式為False
             if not self.boxSltMode:
+                # 打開矩形選取模式
                 self.boxSltMode = True
                 # 矩形選取開啟，點選取不能點擊
                 self.pointBtn.setEnabled(True)
                 # 矩形選開啟，套索選取不能點擊
                 self.lassoBtn.setEnabled(True)
+            # 如果矩形選取模式為True
             else:
+                # 關閉矩形選取模式
                 self.boxSltMode = False
                 # 矩形選取關閉，點選取可以點擊
                 self.pointBtn.setEnabled(False)
@@ -58,71 +66,99 @@ class HighlightInteractorStyle(vtkInteractorStyleRubberBand3D):
                 self.lassoBtn.setEnabled(False)
         # 點選取模式
         elif self.key == "p" or self.key == "P":
+            # 如果點選取模式為False
             if not self.pointSltMode:
+                # 取消按鍵點選，清空點選的列表
                 self.point_func.pathList = []
+                # 打開點選取模式
                 self.pointSltMode = True
-
+            # 如果點選取模式為True
             else:
+                # 關閉點選取模式
                 self.pointSltMode = False
+                # 清除所有點的視覺化資料、最短路徑資料等
                 self.point_func.unRenderAllSelectors(self.renderer,self.GetInteractor())
+                # 清除所有套索的視覺化資料、最短路徑資料等
                 self.lasso_func.unRenderAllSelectors(self.renderer,self.GetInteractor())
-                print("type of point_func self.GetInteractor: ",type(self.point_func))
         # 套索選取模式
         elif self.key == "l" or self.key == "L":
+            # 如果套索選取模式為False
             if not self.lassoSltMode:
+                # 清空套索選取的儲存id
                 self.lasso_func.pickpointId = []
+                # 打開套索選取模式
                 self.lassoSltMode = True
+            # 如果套索選取模式為True
             else:
+                # 關閉套索選取模式
                 self.lassoSltMode = False
+                # 清除所有套索的視覺化資料、最短路徑資料等
                 self.point_func.unRenderAllSelectors(self.renderer,self.GetInteractor())
+                # 清除所有套索的視覺化資料、最短路徑資料等
                 self.lasso_func.unRenderAllSelectors(self.renderer,self.GetInteractor())
-        # 矩形刪除範圍
+        # 矩形刪除範圍，滿足按下delete鍵且矩形選取模式為True
         elif self.key == "Delete"  and self.boxSltMode:
+            # 移除選取範圍
             self.removeCells(self.poly_data,self.selection_frustum)
-        # 點刪除範圍
+        # 點刪除範圍，滿足按下delete鍵且點選取模式為True
         elif self.key == "Delete" and self.pointSltMode:
+            # 移除選取範圍
             self.removeCells(self.poly_data,self.point_func.loop)
+            # 清除所有點的視覺化資料、最短路徑資料等
             self.point_func.unRenderAllSelectors(self.renderer,self.GetInteractor())
-        # 套索刪除範圍
+        # 套索刪除範圍，滿足按下delete鍵且套索選取模式為True
         elif self.key == "Delete" and self.lassoSltMode:
+            # 移除選取範圍
             self.removeCells(self.poly_data,self.lasso_func.loop)
+            # 清除所有套索的視覺化資料、最短路徑資料等
             self.lasso_func.unRenderAllSelectors(self.renderer,self.GetInteractor())
-        # 封閉點選取範圍
+        # 封閉點選取範圍，滿足按下enter鍵
         elif self.key == "Return":
+            # enter後閉合點選範圍
             self.point_func.closeArea(self.GetInteractor(),self.renderer)
-        # 點選取undo
+        # 點選取undo，滿足按下z鍵且點選取模式為True
         elif (self.key == "z" or self.key == "Z") and self.pointSltMode:
+            # 點選取undo
             self.point_func.undo(self.renderer,self.GetInteractor())
-        # 點選取redo
+        # 點選取redo，滿足按下y鍵且點選取模式為True
         elif (self.key == "y" or self.key == "Y") and self.pointSltMode:
+            # 點選取redo
             self.point_func.redo(self.renderer,self.GetInteractor())
-        # 套索選取undo
+        # 套索選取undo，滿足按下z鍵且套索選取模式為True
         elif (self.key == "z" or self.key=="Z") and self.lassoSltMode:
+            # 套索選取undo
             self.lasso_func.undo(self.renderer,self.GetInteractor())
-        # 套索選取redo
+        # 套索選取redo，滿足按下y鍵且套索選取模式為True
         elif (self.key == "y" or self.key == "Y") and self.lassoSltMode:
+            # 套索選取redo
             self.lasso_func.redo(self.renderer,self.GetInteractor())
-    # 移除選取範圍
+    # 移除選取範圍，第一個參數接收輸入模型，第二個參數接收
     def removeCells(self,poly_data,selection_frustum):
+        # 檢查輸入的剪裁資料，型別有無符合vtk.vtkImplicitFunction；如果沒有會報錯，如缺少參數等
         if not isinstance(selection_frustum, vtk.vtkImplicitFunction):
             return
-
+        # 初始化剪裁器
         clipper = vtk.vtkClipPolyData()
-        clipper.SetInputData(poly_data) 
+        # 要剪裁的目標就是輸入的3D模型
+        clipper.SetInputData(poly_data)
+        # 剪裁的函數是選取範圍 
         clipper.SetClipFunction(selection_frustum)
+        # 剪裁的方向是選取範圍的內部
         clipper.GenerateClippedOutputOff()
+        # 更新剪裁器
         clipper.Update()
-
+        # 取得剪裁後的資料
         new_poly_data = clipper.GetOutput()
-
+        # 如果剪裁後的資料沒有任何cell，代表沒有選取到任何東西，不做事
         if new_poly_data.GetNumberOfCells() == 0:
             return
-
+        # 複製剪裁後的資料給輸入的3D模型
         self.poly_data.DeepCopy(new_poly_data)
+        # 移除所有視覺化資料
         self.renderer.RemoveActor(self.actor)
-
+        # 更新視覺化資料
         self.mapper.SetInputData(poly_data)
-    
+        # 更新渲染器、互動器
         self.GetInteractor().GetRenderWindow().Render()
     # 進入到class HightlightInteractorStyle，監聽器的狀態都是屬於矩形選取模式；滑鼠左鍵按下
     def onLeftButtonDown(self,obj,event):
@@ -134,14 +170,15 @@ class HighlightInteractorStyle(vtkInteractorStyleRubberBand3D):
             self.OnLeftButtonDown()
         # 點選模式，在class PointInteractor
         elif self.pointSltMode:
-            # 使用實體變數point_func，呼叫onLeftButtonDown函數，放入監聽氣得參數，互動器、渲染器
+            # 使用實體變數point_func，呼叫onLeftButtonDown函數，放入監聽器的參數，互動器、渲染器
             self.point_func.onLeftButtonDown(obj,event,self.GetInteractor(),self.renderer)
         # 套索選取模式，在class LassoInteractor
         elif self.lassoSltMode:
-            # 使用實體變數lasso_func，呼叫onLeftButtonDown函數，放入監聽氣得參數，互動器、渲染器
+            # 使用實體變數lasso_func，呼叫onLeftButtonDown函數，放入監聽器的參數，互動器、渲染器
             self.lasso_func.onLeftButtonDown(obj,event,self.GetInteractor(),self.renderer)
     # 進入到class HightlightInteractorStyle，監聽器的狀態都是屬於矩形選取模式；滑鼠左鍵放開
     def onLeftButtonUp(self,obj,event):
+        # 取得左鍵放開時的位置，終點座標2D
         self.end_position = self.GetInteractor().GetEventPosition()
         # 先檢查使用穿透與否
         if self.throughBtnMode:
@@ -151,32 +188,44 @@ class HighlightInteractorStyle(vtkInteractorStyleRubberBand3D):
         else:
             # 矩形選取模式
             if self.boxSltMode:
-                
-                print(f"start_position[0]: {self.start_position[0]}, end_position[0]: {self.end_position[0]}")
-                print(f"start_position[1]: {self.start_position[1]}, end_position[1]: {self.end_position[1]}")
                 # start_position[0]代表x座標，start_position[1]代表y座標；end_position[0]代表x座標，end_position[1]代表y座標
                 self.boxArea.AreaPick(self.start_position[0],self.start_position[1],self.end_position[0],self.end_position[1],self.renderer)
                 # 取得選取範圍
                 self.selection_frustum = self.boxArea.GetFrustum()
+                # 剪裁選取範圍
                 self.extract_geometry = vtk.vtkExtractGeometry()
+                # 輸入剪裁的3D模型
                 self.extract_geometry.SetInputData(self.poly_data)
+                # 設定剪裁的選取範圍
                 self.extract_geometry.SetImplicitFunction(self.selection_frustum)
+                # 更新剪裁器
                 self.extract_geometry.Update()
+                # 取得剪裁後的資料
                 self.selected_poly_data = self.extract_geometry.GetOutput()   
+                # 移除所有視覺化資料
                 self.geometry_filter = vtk.vtkGeometryFilter()
+                # 設定輸入資料
                 self.geometry_filter.SetInputData(self.selected_poly_data)
+                # 更新幾何過濾器
                 self.geometry_filter.Update()
+                # 移除所有視覺化資料
                 self.mapper.SetInputData(self.geometry_filter.GetOutput())
+                # 更新視覺化資料
                 self.actor.SetMapper(self.mapper)
+                # 設定填滿示意顏色為紅色
                 self.actor.GetProperty().SetColor(1.0, 0.0, 0.0) 
+                # 設定渲染器
                 self.renderer.AddActor(self.actor)
+                # override舊監聽器
                 self.OnLeftButtonUp()
+                # 更新視窗
                 self.GetInteractor().GetRenderWindow().Render()
     # 穿透功能狀態
     def checkThroughModel(self):
         if self.throughBtnMode:
             print("Through button is on")
-            self.visibleSlt.selectVisible(self.start_position,self.end_position,self.renderer)
+            self.visibleSlt = VisibleSlt(self.renderer,self.GetInteractor().GetRenderWindow().Render())
+            self.visibleSlt.selectVisible(self.start_position,self.end_position)
         else:
             
             print("Through button is off")
@@ -192,6 +241,7 @@ class LassoInteractor(vtkInteractorStyleTrackballCamera):
         super().__init__()
         # 初始化輸入資料
         self.poly_data = poly_data
+        # 初始化選取範圍資料
         self.picker = vtk.vtkCellPicker()
         # 選取範圍資料
         self.select_append = vtk.vtkAppendPolyData()
@@ -199,12 +249,15 @@ class LassoInteractor(vtkInteractorStyleTrackballCamera):
         self.loop = vtk.vtkImplicitSelectionLoop()
         # 儲存最短路徑
         self.dijkstra_path = []
+        # 點選位置
         self.pickpointId = []
         # 視覺化套索線段
         self.boundaryActors = []
-        # redo、undo功能
+        # 存放redo點選位置之列表
         self.redoPickpointId = []
+        # 存放最短路徑之列表
         self.redoDijkstraPath = []
+        # 存放redo視覺化線段之列表
         self.redoBoundaryActors = []
         # 新的計算多邊形列表
         self.store_select_arr = []
@@ -212,27 +265,36 @@ class LassoInteractor(vtkInteractorStyleTrackballCamera):
         self.AddObserver("LeftButtonPressEvent", self.onLeftButtonDown)
     # 滑鼠左鍵按下
     def onLeftButtonDown(self, obj, event, interactor, renderer):
-        # 渲染、互動器
+        # 渲染器
         self.renderer = renderer
+        # 互動器
         self.interactor = interactor
         # 點選位置
         clickPos = interactor.GetEventPosition()
+        # 選取位置轉成3D座標
         self.picker.Pick(clickPos[0], clickPos[1], 0, renderer)
+        # 選取輸入物件
         self.pickpointId.append(self.picker.GetPointId())
         # 計算最短路徑
         for i in range(len(self.pickpointId)):
+            # 實體化最短路徑
             dijkstra = vtk.vtkDijkstraGraphGeodesicPath()
+            # 設定最短路徑的輸入資料
             dijkstra.SetInputData(self.poly_data)
+            # 最短路徑最後一點為選取的點
             dijkstra.SetStartVertex(self.pickpointId[i])
+            # 最短路徑第一點為選取的點
             dijkstra.SetEndVertex(self.pickpointId[i-1])
+            # 更新最短路徑
             dijkstra.Update()
+            # 存放最短路徑
             self.dijkstra_path.append(dijkstra)
         # 複製最短路徑資料給self.boundary
         for path in self.dijkstra_path:
+            # 視覺化套索線段
             self.select_append.AddInputData(path.GetOutput())
         self.select_append.Update()
         self.boundary = self.select_append.GetOutput()     
-        # 視覺化套索線段
         boundaryMapper = vtk.vtkPolyDataMapper()
         boundaryMapper.SetInputData(self.boundary)
         self.boundaryActor = vtk.vtkActor()
@@ -411,7 +473,6 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
         if(picker.GetCellId() != -1):
             # 視覺化選取點
             self.pathList.append(picker.GetPointId())
-            
             # 點選位置座標
             point_position = self.poly_data.GetPoint(picker.GetPointId())
             # 實體化球體

@@ -37,7 +37,7 @@ class ModelEditorPage(QtWidgets.QDialog):
         self.lasso_func = LassoInteractor(self.poly_data)
         # 觸發穿透按鍵
         self.throughFuncBtn.clicked.connect(self.throughBtnPress)
-        self.throughFunc = VisibleSlt()
+        self.throughFunc = VisibleSlt(self.renderer,self.vtk_widget.GetRenderWindow().GetInteractor())
         
 
     # 穿透按鍵
