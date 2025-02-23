@@ -1,19 +1,23 @@
 import vtk
 from vtkmodules.vtkInteractionStyle import vtkInteractorStyleRubberBand3D, vtkInteractorStyleTrackballCamera
-import numpy as np
-import utils.pointLinkList as pl
+from models.visible_select_func import VisibleSlt
+
 class HighlightInteractorStyle(vtkInteractorStyleRubberBand3D):
     def __init__(self, poly_data, renderer):
         super().__init__()
         # 初始化輸入資料
         self.poly_data = poly_data
+        # 渲染視窗
         self.renderer = renderer
-        # 選取模式開關
+        # 矩形鍵盤快捷鍵、按鈕選取開關
         self.boxSltMode = False 
+        # 點鍵盤快捷鍵、按鈕選取開關
         self.pointSltMode = False
+        # 套索鍵盤快捷鍵、按鈕選取開關
         self.lassoSltMode = False
-        # 選取範圍資料
+        # 矩形範圍按下起始點
         self.start_position = None
+        # 矩形範圍放開起始點
         self.end_position = None
         self.geometry_filter = None
         self.selected_poly_data = None
@@ -29,7 +33,11 @@ class HighlightInteractorStyle(vtkInteractorStyleRubberBand3D):
         self.AddObserver("KeyPressEvent", self.modeSltKeyPress)
         self.AddObserver("LeftButtonReleaseEvent", self.onLeftButtonUp)
         self.AddObserver("LeftButtonPressEvent", self.onLeftButtonDown)
-        # 回傳互動器
+        # 穿透實體化
+        self.visibleSlt = VisibleSlt()
+        # 穿透按鈕開關
+        self.throughBtnMode = False
+
 
     # 選取模式
     def modeSltKeyPress(self, obj, event):
@@ -38,13 +46,22 @@ class HighlightInteractorStyle(vtkInteractorStyleRubberBand3D):
         if self.key == "c" or self.key == "C":
             if not self.boxSltMode:
                 self.boxSltMode = True
+                # 矩形選取開啟，點選取不能點擊
+                self.pointBtn.setEnabled(True)
+                # 矩形選開啟，套索選取不能點擊
+                self.lassoBtn.setEnabled(True)
             else:
                 self.boxSltMode = False
+                # 矩形選取關閉，點選取可以點擊
+                self.pointBtn.setEnabled(False)
+                # 矩形選取關閉，套索選取可以點擊
+                self.lassoBtn.setEnabled(False)
         # 點選取模式
         elif self.key == "p" or self.key == "P":
             if not self.pointSltMode:
                 self.point_func.pathList = []
                 self.pointSltMode = True
+
             else:
                 self.pointSltMode = False
                 self.point_func.unRenderAllSelectors(self.renderer,self.GetInteractor())
@@ -107,35 +124,68 @@ class HighlightInteractorStyle(vtkInteractorStyleRubberBand3D):
         self.mapper.SetInputData(poly_data)
     
         self.GetInteractor().GetRenderWindow().Render()
-    # 滑鼠左鍵按下
+    # 進入到class HightlightInteractorStyle，監聽器的狀態都是屬於矩形選取模式；滑鼠左鍵按下
     def onLeftButtonDown(self,obj,event):
-        if self.boxSltMode:
-            self.start_position = self.GetInteractor().GetEventPosition()
+        # 取得左鍵按下時的位置，起點座標2D
+        self.start_position = self.GetInteractor().GetEventPosition()
+        # 矩形選取模式，在class HighlightInteractorStyle
+        if self.boxSltMode: 
+            # override class vtkInteractorStyleRubberBand3D預設左鍵按下的功能
             self.OnLeftButtonDown()
+        # 點選模式，在class PointInteractor
         elif self.pointSltMode:
+            # 使用實體變數point_func，呼叫onLeftButtonDown函數，放入監聽氣得參數，互動器、渲染器
             self.point_func.onLeftButtonDown(obj,event,self.GetInteractor(),self.renderer)
+        # 套索選取模式，在class LassoInteractor
         elif self.lassoSltMode:
+            # 使用實體變數lasso_func，呼叫onLeftButtonDown函數，放入監聽氣得參數，互動器、渲染器
             self.lasso_func.onLeftButtonDown(obj,event,self.GetInteractor(),self.renderer)
-    # 滑鼠左鍵放開
+    # 進入到class HightlightInteractorStyle，監聽器的狀態都是屬於矩形選取模式；滑鼠左鍵放開
     def onLeftButtonUp(self,obj,event):
-        if self.boxSltMode:
-            self.end_position = self.GetInteractor().GetEventPosition()
-            self.boxArea.AreaPick(self.start_position[0],self.start_position[1],self.end_position[0],self.end_position[1],self.renderer)
-            self.selection_frustum = self.boxArea.GetFrustum()
-            self.extract_geometry = vtk.vtkExtractGeometry()
-            self.extract_geometry.SetInputData(self.poly_data)
-            self.extract_geometry.SetImplicitFunction(self.selection_frustum)
-            self.extract_geometry.Update()
-            self.selected_poly_data = self.extract_geometry.GetOutput()   
-            self.geometry_filter = vtk.vtkGeometryFilter()
-            self.geometry_filter.SetInputData(self.selected_poly_data)
-            self.geometry_filter.Update()
-            self.mapper.SetInputData(self.geometry_filter.GetOutput())
-            self.actor.SetMapper(self.mapper)
-            self.actor.GetProperty().SetColor(1.0, 0.0, 0.0) 
-            self.renderer.AddActor(self.actor)
+        self.end_position = self.GetInteractor().GetEventPosition()
+        # 先檢查使用穿透與否
+        if self.throughBtnMode:
             self.OnLeftButtonUp()
-            self.GetInteractor().GetRenderWindow().Render()
+            self.checkThroughModel()
+            
+        else:
+            # 矩形選取模式
+            if self.boxSltMode:
+                
+                print(f"start_position[0]: {self.start_position[0]}, end_position[0]: {self.end_position[0]}")
+                print(f"start_position[1]: {self.start_position[1]}, end_position[1]: {self.end_position[1]}")
+                # start_position[0]代表x座標，start_position[1]代表y座標；end_position[0]代表x座標，end_position[1]代表y座標
+                self.boxArea.AreaPick(self.start_position[0],self.start_position[1],self.end_position[0],self.end_position[1],self.renderer)
+                # 取得選取範圍
+                self.selection_frustum = self.boxArea.GetFrustum()
+                self.extract_geometry = vtk.vtkExtractGeometry()
+                self.extract_geometry.SetInputData(self.poly_data)
+                self.extract_geometry.SetImplicitFunction(self.selection_frustum)
+                self.extract_geometry.Update()
+                self.selected_poly_data = self.extract_geometry.GetOutput()   
+                self.geometry_filter = vtk.vtkGeometryFilter()
+                self.geometry_filter.SetInputData(self.selected_poly_data)
+                self.geometry_filter.Update()
+                self.mapper.SetInputData(self.geometry_filter.GetOutput())
+                self.actor.SetMapper(self.mapper)
+                self.actor.GetProperty().SetColor(1.0, 0.0, 0.0) 
+                self.renderer.AddActor(self.actor)
+                self.OnLeftButtonUp()
+                self.GetInteractor().GetRenderWindow().Render()
+    # 穿透功能狀態
+    def checkThroughModel(self):
+        if self.throughBtnMode:
+            print("Through button is on")
+            self.visibleSlt.selectVisible(self.start_position,self.end_position,self.renderer)
+        else:
+            
+            print("Through button is off")
+
+    def mode(self,throughBtn):
+        self.throughBtnMode = throughBtn
+        print(f"throughBtnMode: {self.throughBtnMode}")
+
+
 # 套索選取類別
 class LassoInteractor(vtkInteractorStyleTrackballCamera):
     def __init__(self,poly_data):
@@ -318,6 +368,8 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
         self.sphereActors = []
         # 存放所有視覺化線段的列表
         self.lineActors = []
+        # 存放封閉視覺化線段
+        self.closeLineActors = []
         # 點選點的列表
         self.pathList = []
         # 最短路徑的點的列表，也就是實際的線段
@@ -332,10 +384,18 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
         self.redoMeshNumList = []
         # 最短路徑每一點的列表
         self.dijkstra_path_arr = []
-        # mesh作為選取範圍的資料
-        self.selectionCells = vtk.vtkCellArray()
         # 選取範圍
         self.loop = vtk.vtkImplicitSelectionLoop()
+        # 實體化封閉路線最短路徑
+        self.close_dijkstra = vtk.vtkDijkstraGraphGeodesicPath()
+        # 封閉線段的最短路徑列表
+        self.close_dijkstra_path_arr = []
+        # 輸入封閉最短路徑的資料
+        self.close_dijkstra.SetInputData(self.poly_data)
+        # 放入loop的點
+        self.selection_point = vtk.vtkPoints()
+        # 整合所有最短路徑列表
+        self.all_dijkstra_path_arr = []
         # 第一個參數是事件名稱，第二個參數是事件的回調函數
         self.AddObserver("LeftButtonPressEvent", self.onLeftButtonDown)
     # 滑鼠左鍵按下
@@ -347,10 +407,11 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
         # 選取位置轉成3D座標
         picker.Pick(clickPos[0],clickPos[1],0,renderer)
         print(f"point coord: {self.poly_data.GetPoint(picker.GetPointId())}")
-        # 不是選取輸入物件不做事
+        # 選取輸入物件
         if(picker.GetCellId() != -1):
             # 視覺化選取點
             self.pathList.append(picker.GetPointId())
+            
             # 點選位置座標
             point_position = self.poly_data.GetPoint(picker.GetPointId())
             # 實體化球體
@@ -383,9 +444,9 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
                 self.dijkstra.SetEndVertex(self.pathList[-1])
                 # 更新最短路徑
                 self.dijkstra.Update()
-
                 # 取得最短路徑的點
-                self.idList = self.dijkstra.GetIdList()
+                self.idList = self.dijkstra.GetIdList() 
+
                 for i in range(self.idList.GetNumberOfIds()-1):
                     print(f"index{i} point id: {self.idList.GetId(i)}|point coord: {self.poly_data.GetPoint(self.idList.GetId(i))}")
                 # 最短路徑實際數量
@@ -413,58 +474,112 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
                     renderer.AddActor(self.lineActor)
                     # undo、消除的列表
                     self.lineActors.append(self.lineActor)
-                    # 視覺化最短路徑
-                    interactor.GetRenderWindow().Render()
                     # 添加所有最短路徑的點到dijkstra_path_arr
                     self.dijkstra_path_arr.append(self.idList.GetId(i))
             # 去除重複的最短路徑點
             self.dijkstra_path_arr=list(set(self.dijkstra_path_arr))
-            self.dijkstra_path_arr = list(reversed(self.dijkstra_path_arr))
             print(f" original dijkstra_path_arr: {self.dijkstra_path_arr}")
-            
             # 渲染最短路徑
             interactor.GetRenderWindow().Render()
 
     # 封閉選取範圍
     def closeArea(self,interactor,renderer):
-        # 將最後一個點與第一個點連接
-
-        # 如果點選的點數小於2，不做事
-        if len(self.pathList) < 2:
-            return
-        # 實體化線段
-        lineSource = vtk.vtkLineSource()
-        # 從self.dijkstra_path_arr取得最後一個點作為封閉線段起始點
-        lineSource.SetPoint1(self.poly_data.GetPoint(self.dijkstra_path_arr[-1]))
-        print(f"self.dijkstra_path_arr[-1]: {self.dijkstra_path_arr[-1]}")
-        # 將self.pathList取德第一個點作為封閉線段結束點
-        lineSource.SetPoint2(self.poly_data.GetPoint(self.pathList[0]))
-        print(f"self.dijkstra_path_arr[0]: {self.pathList[0]}")
-        # 將線段資料轉換成平面圖形資料
-        lineMapper = vtk.vtkPolyDataMapper()
-        # SetInputConnection()動態傳遞點選的線段；GetOutputPort()取得線段
-        lineMapper.SetInputConnection(lineSource.GetOutputPort())
-        # 將線段資料轉換成視覺化物件
-        self.lineActor = vtk.vtkActor()
-        # actor放入mapper，轉換成適合渲染的物件
-        self.lineActor.SetMapper(lineMapper)
-        # 設定線段顏色為紅色
-        self.lineActor.GetProperty().SetColor(1.0, 0.0, 0.0)
-        # 將actor放入渲染器
-        renderer.AddActor(self.lineActor)
+        # 封閉最短路徑的起點是點選的最後一個點
+        self.close_dijkstra.SetStartVertex(self.pathList[-1])
+        # 封閉最短路徑的終點是點選的第一個點
+        self.close_dijkstra.SetEndVertex(self.pathList[0])
+        # 更新封閉最短路徑
+        self.close_dijkstra.Update()
+        # 取得封閉最短路徑的點
+        self.closeIdList = self.close_dijkstra.GetIdList()
+        for i in range(self.closeIdList.GetNumberOfIds()-1):
+            print(f"index{i} point id: {self.closeIdList.GetId(i)}|point coord: {self.poly_data.GetPoint(self.closeIdList.GetId(i))}")
+        # 計算封閉起點與終點之間的實際線段
+        for i in range(self.closeIdList.GetNumberOfIds()-1):
+            # 實體化線段
+            lineSource = vtk.vtkLineSource()
+            # 從self.dijkstra_path_arr取得最後一個點作為封閉線段起始點
+            lineSource.SetPoint1(self.poly_data.GetPoint(self.closeIdList.GetId(i)))
+            # 將self.pathList取德第一個點作為封閉線段結束點
+            lineSource.SetPoint2(self.poly_data.GetPoint(self.closeIdList.GetId(i+1)))
+            # 將線段資料轉換成平面圖形資料
+            lineMapper = vtk.vtkPolyDataMapper()
+            # SetInputConnection()動態傳遞點選的線段；GetOutputPort()取得線段
+            lineMapper.SetInputConnection(lineSource.GetOutputPort())
+            # 將線段資料轉換成視覺化物件
+            self.lineActor = vtk.vtkActor()
+            # actor放入mapper，轉換成適合渲染的物件
+            self.lineActor.SetMapper(lineMapper)
+            # 設定線段顏色為紅色
+            self.lineActor.GetProperty().SetColor(1.0, 0.0, 0.0)
+            # 將actor放入渲染器
+            renderer.AddActor(self.lineActor)
+            # 添加所有封閉最短路徑的點到dijkstra_path_arr
+            self.close_dijkstra_path_arr.append(self.closeIdList.GetId(i))
+            # 線段視覺化列表
+            self.closeLineActors.append(self.lineActor)
+        # 去除重複的最短路徑點
+        self.close_dijkstra_path_arr=list(set(self.close_dijkstra_path_arr))
+        # 將封閉最短路徑整合到dijkstra_path_arr
+        print(f"all point id:{self.dijkstra_path_arr+self.close_dijkstra_path_arr}")
+        # 整合所有最短路徑
+        self.all_dijkstra_path_arr = self.dijkstra_path_arr+self.close_dijkstra_path_arr
+        # 將所有點最短路徑的點儲存到selection_point
+        for point in (self.all_dijkstra_path_arr):
+            # 轉換成座標
+            coord = self.poly_data.GetPoint(point)
+            # 將座標放入selection_point
+            self.selection_point.InsertNextPoint(coord)
+        # 將selection_point放入loop
+        self.loop.SetLoop(self.selection_point)
+        # 查看loop有無資料
+        print(f"loop: {self.loop.GetLoop()}")
+        # 渲染畫面
         interactor.GetRenderWindow().Render()
 
     # 清除選取輔助樣式
     def unRenderAllSelectors(self,renderer,interactor):
+        # 清除所有視覺化點
         for actor in self.sphereActors:
+            # 移除actor
             renderer.RemoveActor(actor)
-        self.sphereActors.clear()
+        # 清除所有視覺化線段
         for actor in self.lineActors:
+            # 移除actor
             renderer.RemoveActor(actor)
+        # 移除封閉線段視覺化線條
+        for actor in self.closeLineActors:
+            # 移除actor
+            renderer.RemoveActor(actor)
+        # 清除點選資料
         self.pathList = []
+        # 清除實際線段數量
         self.meshNumList = []
+        # 清除所有最短路徑
         self.dijkstra_path_arr = []
+        # 清除封閉最短路徑
+        self.close_dijkstra_path_arr = []
+        # 清除所有最短路徑
+        self.all_dijkstra_path_arr = []
+        # 清除loop內的點
+        self.selection_point.Reset()
+        # 清除原點列表
+        self.sphereActors.clear()
+        # 清除原線段列表
         self.lineActors.clear()
+        # 清除封閉線段列表
+        self.closeLineActors.clear()
+        # 檢查資料有無完全清除
+        print(f"------------unRenderAllSelectors detail start------------")
+        print(f"len(sphereActors): {len(self.sphereActors)}")
+        print(f"len(lineActors): {len(self.lineActors)}")
+        print(f"pathList: {self.pathList}")
+        print(f"meshNumList: {self.meshNumList}")
+        print(f"dijkstra_path_arr: {self.dijkstra_path_arr}")
+        print(f"close_dijkstra_path_arr: {self.close_dijkstra_path_arr}")
+        print(f"all_dijkstra_path_arr: {self.all_dijkstra_path_arr}")
+        print(f"------------unRenderAllSelectors detail end------------")
+        # 渲染畫面
         interactor.GetRenderWindow().Render()
     # 取消上一步選取
     def undo(self,renderer,interactor):

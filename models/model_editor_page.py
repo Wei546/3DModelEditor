@@ -2,6 +2,7 @@ from PyQt5 import QtWidgets,uic
 from PyQt5.QtWidgets import QVBoxLayout,QFileDialog,QMessageBox
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from models.interaction_styles import HighlightInteractorStyle,PointInteractor,LassoInteractor
+from models.visible_select_func import VisibleSlt
 import vtk
 from utils.renderer import render_model
 # 檢視3D物件
@@ -23,56 +24,78 @@ class ModelEditorPage(QtWidgets.QDialog):
         self.pointBtn.clicked.connect(self.pointBtnPress)
         self.lassoBtn.clicked.connect(self.lassoBtnPress)
         self.saveBtn.clicked.connect(self.save_file)
-        # 按鍵狀態
-        self.boxSltBtnMode = False
-        self.pointSltBtnMode = False
-        self.lassoSltBtnMode = False
+
+        
         # 瀏覽3D物件
         self.model_actor = None
         self.poly_data = None
+        # HighlightInteractorStyle類別
         self.style = None
-        # 套所、點類別
+        # 實體化點選取類別
         self.point_func = PointInteractor(self.poly_data)
+        # 實體化套索類別
         self.lasso_func = LassoInteractor(self.poly_data)
-        # 取消渲染
+        # 觸發穿透按鍵
+        self.throughFuncBtn.clicked.connect(self.throughBtnPress)
+        self.throughFunc = VisibleSlt()
+        
+
+    # 穿透按鍵
+    def throughBtnPress(self):
+        if self.style.throughBtnMode:
+            self.throughFuncBtn.setStyleSheet("background-color: #F5DEB3;")
+            self.style.mode(False)
+            self.throughFunc.projectToPerspective(self.renderer)
+            self.throughFunc.checkWindowMode(self.renderer)
+            self.style.mode(False)
+
+        else:
+            self.throughFuncBtn.setStyleSheet("background-color: none;")
+            self.throughFunc.projectToParallel(self.renderer)
+            self.throughFunc.checkWindowMode(self.renderer)
+            self.style.throughBtnMode = not self.style.throughBtnMode
+            self.style.mode(True)
         
     # 矩形選取模式
     def boxBtnPress(self):
-        if self.boxSltBtnMode:
-            self.boxSltBtnMode = False
-            self.pointBtn.setEnabled(True)
-            self.lassoBtn.setEnabled(True)
+        # 矩形選取模式為True
+        if self.style.boxSltMode:
+            # 再按一下關閉矩形選取
             self.style.boxSltMode = False
+            # 矩形選取開啟，點選取不能點擊
+            self.pointBtn.setEnabled(True)
+            # 矩形選開啟，套索選取不能點擊
+            self.lassoBtn.setEnabled(True)
+        # 矩形選取模式為False
         else:
-            self.boxSltBtnMode = not self.boxSltBtnMode
+            # 再按一下開啟矩形選取
+            self.style.boxSltMode = not self.style.boxSltMode
+            # 矩形選取關閉，點選取可以點擊
             self.pointBtn.setEnabled(False)
+            # 矩形選取關閉，套索選取可以點擊
             self.lassoBtn.setEnabled(False)
-            self.style.boxSltMode = True
+            
     # 點選取模式
     def pointBtnPress(self):
-        if self.pointSltBtnMode:
-            self.pointSltBtnMode = False
+        if self.style.pointSltMode:
+            self.style.pointSltMode = False
             self.boxBtn.setEnabled(True)
             self.lassoBtn.setEnabled(True)
-            self.style.pointSltMode = False
         else:
-            self.pointSltBtnMode = not self.pointSltBtnMode
+            self.style.pointSltMode = not self.style.pointSltMode
             self.boxBtn.setEnabled(False)
             self.lassoBtn.setEnabled(False)
-            self.style.pointSltMode = True
             
     # 套索選取模式
     def lassoBtnPress(self):
-        if self.lassoSltBtnMode:
-            self.lassoSltBtnMode = False
+        if self.style.lassoSltMode:
+            self.style.lassoSltMode = False
             self.boxBtn.setEnabled(True)
             self.pointBtn.setEnabled(True)
-            self.style.lassoSltMode = False
         else:
-            self.lassoSltBtnMode = not self.lassoSltBtnMode
+            self.style.lassoSltMode = not self.style.lassoSltMode
             self.boxBtn.setEnabled(False)
             self.pointBtn.setEnabled(False)
-            self.style.lassoSltMode = True
             
     # 載入檔案
     def load_file(self):
