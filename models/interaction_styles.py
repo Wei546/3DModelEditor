@@ -139,7 +139,7 @@ class HighlightInteractorStyle(vtkInteractorStyleRubberBand3D):
             return
         # 初始化剪裁器
         clipper = vtk.vtkClipPolyData()
-        # 要剪裁的目標就是輸入的3D模型
+        # 要剪裁的目標放入輸入的3D模型
         clipper.SetInputData(poly_data)
         # 剪裁的函數是選取範圍 
         clipper.SetClipFunction(selection_frustum)
@@ -245,7 +245,9 @@ class LassoInteractor(vtkInteractorStyleTrackballCamera):
         self.picker = vtk.vtkCellPicker()
         # 選取範圍資料
         self.select_append = vtk.vtkAppendPolyData()
+        # 用於處理undo、redo、刪除網格後清除資料功能；儲存點選的所有點
         self.selection_point = vtk.vtkPoints()
+        # 儲存想要刪除的部份
         self.loop = vtk.vtkImplicitSelectionLoop()
         # 儲存最短路徑
         self.dijkstra_path = []
@@ -293,126 +295,105 @@ class LassoInteractor(vtkInteractorStyleTrackballCamera):
         for path in self.dijkstra_path:
             # 視覺化套索線段
             self.select_append.AddInputData(path.GetOutput())
+        # 更新視覺化套索線段
         self.select_append.Update()
+        # boundary列表儲存視覺化套索線段資料
         self.boundary = self.select_append.GetOutput()     
+        # 實體化選取範圍要放入的映射器變數
         boundaryMapper = vtk.vtkPolyDataMapper()
+        # 映射器放入boundary列表
         boundaryMapper.SetInputData(self.boundary)
+        # 選取範圍要放入的渲染物件變數
         self.boundaryActor = vtk.vtkActor()
+        # 渲染物件放入映射器
         self.boundaryActor.SetMapper(boundaryMapper)
+        # 設定選取範圍的線寬
         self.boundaryActor.GetProperty().SetLineWidth(2)
+        # 設定選取範圍線段的顏色為紅色
         self.boundaryActor.GetProperty().SetColor(1, 0, 0)
+        # 視覺化線段套索要清除效果放入的列表
         self.boundaryActors.append(self.boundaryActor)
+        # 渲染器放入視覺化線段套索
         renderer.AddActor(self.boundaryActor)
-        interactor.GetRenderWindow().Render()
         # 小於3個點不做事
         if len(self.pickpointId) < 3:
             return
         # 選取範圍資料
         self.loop.SetLoop(self.boundary.GetPoints())
-        clipper = vtk.vtkClipPolyData()
-        clipper.SetInputData(self.poly_data)
-        clipper.SetClipFunction(self.loop)
-        clipper.InsideOutOn()
-        clipper.Update()
-        clipperMapper = vtk.vtkPolyDataMapper()
-        clipperMapper.SetInputConnection(clipper.GetOutputPort())
-        clipperActor = vtk.vtkActor()
-        clipperActor.SetMapper(clipperMapper)
-        renderer.AddActor(clipperActor)
+        # 更新視窗
         interactor.GetRenderWindow().Render()
         
-    # 清除選取輔助樣式
+    # 清除選取樣式、資料；render是HightLightInteractorStyle的渲染器，interactor是HightLightInteractorStyle的互動器
     def unRenderAllSelectors(self,renderer,interactor):
+        # 視覺化線段套索要清除效果
         for actor in self.boundaryActors:
+            # 移除渲染物件
             renderer.RemoveActor(actor)
+        # 清除視覺化線段套索
         self.boundaryActors.clear()
+        # 清除點選位置資料
         self.selection_point.Reset()
+        # 清除存放最短路徑的列表的資料
         self.dijkstra_path.clear()
+        # 清除點選位置的id的資料
         self.pickpointId.clear()
+        # 清除選取範圍的資料
         self.select_append.RemoveAllInputs()
+        # 更新視窗
         interactor.GetRenderWindow().Render()
-    # 取消上一步選取
+    # 取消上一步選取；render是HightLightInteractorStyle的渲染器，interactor是HightLightInteractorStyle的互動器
     def undo(self,renderer,interactor):
         # 沒有選到點不做事
         if not self.pickpointId:
             return
         # undo點選位置
         last_pickpointId = self.pickpointId.pop()
+        # 存放undo點選位置，用於redo
         self.redoPickpointId.append(last_pickpointId)
         # undo最短路徑
         if self.dijkstra_path:
+            # 避免最短路徑的資料重複使用，使用copy方法把資料放入redo的列表
             self.redoDijkstraPath.append(self.dijkstra_path.copy())
+            # 清除上一步最短路徑的資料
             self.dijkstra_path.clear()
-
+        # undo視覺化線段
         if self.boundaryActors:
+            # undo視覺化線段，存放到redo的列表
             last_actor = self.boundaryActors.pop()
+            # 存放undo視覺化線段，用於redo
             self.redoBoundaryActors.append(last_actor)
+            # 移除undo視覺化線段
             renderer.RemoveActor(last_actor)
-
+        # 清除點選泛維資料
         self.selection_point.Reset()
+        # 清除選取範圍資料
         self.select_append.RemoveAllInputs()
-
-        if len(self.pickpointId) >= 1:
-            for point_id in self.pickpointId:
-                self.selection_point.InsertNextPoint(self.poly_data.GetPoint(point_id))
-            
-
-            if len(self.pickpointId) >= 2:
-                for i in range(1, len(self.pickpointId)):
-                    dijkstra = vtk.vtkDijkstraGraphGeodesicPath()
-                    dijkstra.SetInputData(self.poly_data)
-                    dijkstra.SetStartVertex(self.pickpointId[i])
-                    dijkstra.SetEndVertex(self.pickpointId[i - 1])
-                    dijkstra.Update()
-                    self.select_append.AddInputData(dijkstra.GetOutput())
-
-                self.select_append.Update()
-
+        # 更新視窗
         interactor.GetRenderWindow().Render()
-        print(f"------------undo detail start------------")
-        print(f"pick point num: {len(self.pickpointId)}")
-        print(f"boundaryActors length: {len(self.boundaryActors)}")
-        print(f"selection point length: {self.selection_point.GetNumberOfPoints()}")
-        print(f"after undo dijkstra path length: {len(self.dijkstra_path)}")
-        print(f"------------undo detail end------------")
     # 還原選取
     def redo(self,renderer,interactor):
         # redo點選位置
         if self.redoPickpointId:
+            # 拿出undo的點選位置資料
             redo_pickpointId = self.redoPickpointId.pop()
+            # 將undo資料添加回點選位置列表
             self.pickpointId.append(redo_pickpointId)
         # redo最短路徑
         if self.redoDijkstraPath:
+            # 拿出undo的最短路徑資料
             redo_dijkstra_path = self.redoDijkstraPath.pop()
+            # 將undo資料添加回最短路徑列表
             self.dijkstra_path = redo_dijkstra_path
         # redo視覺化線段
         if self.redoBoundaryActors:
+            # 拿出undo的視覺化線段資料
             redo_boundary_actor = self.redoBoundaryActors.pop()
+            # 將undo資料添加回視覺化線段列表
             self.boundaryActors.append(redo_boundary_actor)
+            # 渲染器放入視覺化線段
             renderer.AddActor(redo_boundary_actor)
-        # redo選取點
-        if len(self.pickpointId) >= 1:
-            for point_id in self.pickpointId:
-                self.selection_point.InsertNextPoint(self.poly_data.GetPoint(point_id))
-            
-            if len(self.pickpointId) >= 2:
-                for i in range(1, len(self.pickpointId)):
-                    dijkstra = vtk.vtkDijkstraGraphGeodesicPath()
-                    dijkstra.SetInputData(self.poly_data)
-                    dijkstra.SetStartVertex(self.pickpointId[i])
-                    dijkstra.SetEndVertex(self.pickpointId[i - 1])
-                    dijkstra.Update()
-                    self.select_append.AddInputData(dijkstra.GetOutput())
-
-                self.select_append.Update()
-
+        # 更新視窗
         interactor.GetRenderWindow().Render()
-        print(f"------------redo detail start------------")
-        print(f"pick point num: {len(self.pickpointId)}")
-        print(f"boundaryActors length: {len(self.boundaryActors)}")
-        print(f"selection point length: {self.selection_point.GetNumberOfPoints()}")
-        print(f"after redo dijkstra path length: {len(self.dijkstra_path)}")
-        print(f"------------redo detail end------------")
 # 點選取類別，繼承vtkInteractorStyleTrackballCamera
 class PointInteractor(vtkInteractorStyleTrackballCamera):
     # poly_data是輸入的3D模型
@@ -460,7 +441,7 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
         self.all_dijkstra_path_arr = []
         # 第一個參數是事件名稱，第二個參數是事件的回調函數
         self.AddObserver("LeftButtonPressEvent", self.onLeftButtonDown)
-    # 滑鼠左鍵按下
+    # 滑鼠左鍵按下；interactor是HightlightInteractorStyle的互動器，renderer是HightlightInteractorStyle的渲染器
     def onLeftButtonDown(self,obj,event,interactor,renderer):
         # 初始化點選位置座標
         clickPos = interactor.GetEventPosition()
@@ -543,7 +524,7 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
             # 渲染最短路徑
             interactor.GetRenderWindow().Render()
 
-    # 封閉選取範圍
+    # 封閉選取範圍；interactor是HightlightInteractorStyle的互動器，renderer是HightlightInteractorStyle的渲染器
     def closeArea(self,interactor,renderer):
         # 封閉最短路徑的起點是點選的最後一個點
         self.close_dijkstra.SetStartVertex(self.pathList[-1])
@@ -598,7 +579,7 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
         # 渲染畫面
         interactor.GetRenderWindow().Render()
 
-    # 清除選取輔助樣式
+    # 清除選取輔助樣式；interactor是HightlightInteractorStyle的互動器，renderer是HightlightInteractorStyle的渲染器
     def unRenderAllSelectors(self,renderer,interactor):
         # 清除所有視覺化點
         for actor in self.sphereActors:
@@ -630,61 +611,72 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
         self.lineActors.clear()
         # 清除封閉線段列表
         self.closeLineActors.clear()
-        # 檢查資料有無完全清除
-        print(f"------------unRenderAllSelectors detail start------------")
-        print(f"len(sphereActors): {len(self.sphereActors)}")
-        print(f"len(lineActors): {len(self.lineActors)}")
-        print(f"pathList: {self.pathList}")
-        print(f"meshNumList: {self.meshNumList}")
-        print(f"dijkstra_path_arr: {self.dijkstra_path_arr}")
-        print(f"close_dijkstra_path_arr: {self.close_dijkstra_path_arr}")
-        print(f"all_dijkstra_path_arr: {self.all_dijkstra_path_arr}")
-        print(f"------------unRenderAllSelectors detail end------------")
         # 渲染畫面
         interactor.GetRenderWindow().Render()
-    # 取消上一步選取
+    # 取消上一步選取；先回收視覺化點->最短路徑實際線段->最短路徑視覺化線段->再清除存放實際線段的列表
     def undo(self,renderer,interactor):
-        # undo視覺化點
+        # undo上一步點的視覺化
         last_sphere = self.sphereActors.pop()
+        # 清除視覺化點
         renderer.RemoveActor(last_sphere)
+        # 存放undo視覺化點
         self.redoSphereActors.append(last_sphere)
         # undo儲存實際點選列表
         last_path_point = self.pathList.pop()
+        # 存放undo點選列表
         self.redoPathList.append(last_path_point)
+        # 因為要更新點undo的畫面，這裡重新渲染畫面
         interactor.GetRenderWindow().Render()
-        # undo儲存實際線段數量
+        # undo儲存實際線段數量，沒有實際線段，不做事情
         if len(self.meshNumList) == 0:
             return
+        # 一段段回收最短路徑的線段，避免有落單的沒有放到redo
         for i in range(self.meshNumList[-1]):
+            # 避免實際線段超出範圍
             if i == self.meshNumList[-1] - 1:
                 break
             # undo視覺化線段
             last_line = self.lineActors.pop()
+            # 清除視覺化線段
             renderer.RemoveActor(last_line)
+            # 把undo線段放回redo
             self.redoLineActors.append(last_line)
+        # 抽出最短路徑實際線段儲存的資料
         last_mesh_num = self.meshNumList.pop()
+        # 存放undo實際線段數量
         self.redoMeshNumList.append(last_mesh_num)
+        # 更新畫面
         interactor.GetRenderWindow().Render()
-    # 還原選取
+    # 還原選取；先回收視覺化點->最短路徑實際線段->最短路徑視覺化線段->再清除存放實際線段的列表
     def redo(self,renderer,interactor):
         # redo視覺化點
         redo_sphere = self.redoSphereActors.pop()
+        # 渲染器放入視覺化點
         renderer.AddActor(redo_sphere)
+        # 把視覺化點放回原本的列表
         self.sphereActors.append(redo_sphere)
         # redo儲存實際點選列表
         redo_path_point = self.redoPathList.pop()
+        # 把undo點選列表放回原本的列表
         self.pathList.append(redo_path_point)
+        # 重新更新畫面，因為要還原視覺化點
         interactor.GetRenderWindow().Render()
         # redo儲存實際線段數量
         if len(self.redoMeshNumList) == 0:
             return
+        # 迭代每一筆最短路徑的資料
         for i in range(self.redoMeshNumList[-1]):
             if i == self.redoMeshNumList[-1] - 1:
                 break
             # redo視覺化線段
             redo_line = self.redoLineActors.pop()
+            # 重新渲染視覺化線段資料
             renderer.AddActor(redo_line)
+            # 添加回原本的列表
             self.lineActors.append(redo_line)
+        # redo實際線段數量
         redo_mesh_num = self.redoMeshNumList.pop()
+        # 添加回原本的列表
         self.meshNumList.append(redo_mesh_num)
+        # 重新更新畫面
         interactor.GetRenderWindow().Render()
