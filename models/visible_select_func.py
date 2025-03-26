@@ -1,62 +1,78 @@
 import vtk
 import numpy as np
+from models.stitches_slt_btn_func import Stitching
 class VisibleSlt:
     def __init__(self,renderer,interactor):
         self.renderer = renderer
         self.interactor = interactor
+        self.stitching = Stitching(self.renderer,self.interactor)
         return
-    def checkWindowMode(self, renderer):
-         # 檢查render是否為正交視角
-        if renderer.GetActiveCamera().GetParallelProjection():
-            print("Parallel Projection")
-        else:
-            print("Perspective Projection")
-    # 設定render為正交視角
-    def projectToParallel(self, renderer):
-        # 取得當前視角
-        camera = renderer.GetActiveCamera()
-        # 設定render為正交視角
-        camera.ParallelProjectionOn()
-        # 3D物體固定大小
-        camera.SetParallelScale(1)
-        # 渲染為正交視角
-        renderer.SetActiveCamera(camera)
-    def projectToPerspective(self, renderer):
-        # 取得當前視角
-        camera = renderer.GetActiveCamera()
-        # 設定render為透視視角
-        camera.ParallelProjectionOff()
-        # 渲染為透視視角
-        renderer.SetActiveCamera(camera)
-    def checkDepth(self,renderer):
-        return
-    def selectVisible(self,startCoord,endCoord):
-        # Debug輸入座標
-        print("Start Coord:", startCoord)
-        print("End Coord:", endCoord)
-
+    def boxOnlyForVisible(self,startCoord,endCoord,poly_data):
         # 取得起始與結束座標
         selectXStart, selectYStart = startCoord
         selectXEnd, selectYEnd = endCoord
 
-        print(f"selectXStart: {selectXStart}")
-        print(f"selectYStart: {selectYStart}")
-        print(f"selectXEnd: {selectXEnd}")
-        print(f"selectYEnd: {selectYEnd}")
-
-        # 設定 hardware selector
+        # 選取當前能看見的範圍，不會選到背面被遮住的地方
         hardware_selector = vtk.vtkHardwareSelector()
-        hardware_selector.SetFieldAssociation(vtk.vtkDataObject.FIELD_ASSOCIATION_CELLS)  # 選取可視區域
+        # 將選取的物件設定為網格
+        hardware_selector.SetFieldAssociation(vtk.vtkDataObject.FIELD_ASSOCIATION_CELLS)
+        # 把選取範圍加入渲染器，後續才能使用GetNode
         hardware_selector.SetRenderer(self.renderer)
-        print("Hardware Selector:", hardware_selector)
-        print(f"hardware input:{hardware_selector.SetArea(selectXStart, selectYStart, selectXEnd, selectYEnd)}")
-        print(f"{hardware_selector.GetArea()}")
-        self.renderer
-        # 開始選取
-        hardware_selector.Select()
-        hardware_selector.SetArea(selectXStart, selectYStart, selectXEnd, selectYEnd)
-        self.interactor
+        # 小的x座標是起始座標，放第一個參數；小的y座標是起始座標，放第二個參數；大的x座標是結束座標，放第三個參數；大的y座標是結束座標，放第四個參數
+        if selectXStart < selectXEnd and selectYStart < selectYEnd:
+            hardware_selector.SetArea(selectXStart, selectYStart, selectXEnd, selectYEnd)
+        elif selectXStart < selectXEnd and selectYStart > selectYEnd:
+            hardware_selector.SetArea(selectXStart, selectYEnd, selectXEnd, selectYStart)
+        elif selectXStart > selectXEnd and selectYStart < selectYEnd:
+            hardware_selector.SetArea(selectXEnd, selectYStart, selectXStart, selectYEnd)
+        else:
+            hardware_selector.SetArea(selectXEnd, selectYEnd, selectXStart, selectYStart)
+        # 取得選取的物件
+        selection = hardware_selector.Select()
+        # 在vtkHardwareSelector類別取得可以拿到選擇網格數量的屬性
+        selectionNode = selection.GetNode(0)
+        # 取得選取的網格數量的列表
+        selectionList = selectionNode.GetSelectionList()
+        colors = poly_data.GetCellData().GetScalars()
+        print(f"visible select func:{selectionList}")
+
+        colors = vtk.vtkUnsignedCharArray()
+        colors.SetNumberOfComponents(3)  # RGB
+        colors.SetNumberOfTuples(poly_data.GetNumberOfCells())
+        poly_data.GetCellData().SetScalars(colors)
+        for i in range(poly_data.GetNumberOfCells()):
+            colors.SetTuple(i, [255, 255, 255])
+        poly_data.GetCellData().SetScalars(colors)
+        for i in range(selectionList.GetNumberOfTuples()):
+            cell_id = selectionList.GetValue(i)  # 這裡使用 GetValue(i) 獲取網格 ID
+            colors.SetTuple(cell_id, [255, 0, 0])
+        poly_data.GetCellData().SetScalars(colors)
+        # # 初始化color為vtkUnsignedCharArray，因為不能使用vtk，setProperty函式更改顏色
+        # colors = vtk.vtkUnsignedCharArray()
+        # # 設定顏色
+        # colors.SetNumberOfComponents(3)
+        # # 迭代顏色
+        # for i in range(poly_data.GetNumberOfCells()):
+        #     # 如果選取的網格有在輸入的模型中
+        #     if i in [selectionList.GetValue(j) for j in range(selectionList.GetNumberOfValues())]:
+        #         # 設定顏色為紅色
+        #         colors.InsertNextTuple3(255, 0, 0)
+        #     else:
+        #         # 預設輸入模型的顏色
+        #         colors.InsertNextTuple3(255, 255, 255)
+        # # 設定顏色
+        # poly_data.GetCellData().SetScalars(colors)
+        # 取得選取的細胞數量
+        self.clipped_data = self.stitching.stitching_func(selectionList,poly_data)
+    def pointOnlyForVisible(self,pickCoord):
+        print(f"entering to visible select func pickCoord:{pickCoord}")
+        return
+    def process_stitching(self):
+        self.stitching.boundary_stitching(self.clipped_data)
         
+
+
+
 
         
 
