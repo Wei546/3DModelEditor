@@ -53,7 +53,7 @@ class Stitching:
         # 呼叫連接功能
         # self.connect_vertices(selected)
         # 計算法向量
-        self.calNormal(selected)
+        # self.calNormal(selected)
 
         # 合併細分後的選取範圍網格+未細分的非選取範圍網格 
     def connect_vertices(self,selected):

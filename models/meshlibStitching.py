@@ -40,3 +40,4 @@ def run_stitching_process(file_path):
 
     #儲存修改後的網格
     mrmeshpy.saveMesh(shell, f"stitched_{original_file_name}.stl")
+    return f"stitched_{original_file_name}.stl"

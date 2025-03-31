@@ -16,15 +16,21 @@ class BoxInteractor(vtkInteractorStyleRubberBand3D):
         self.start_position = [0,0]
         self.boxArea = vtk.vtkAreaPicker()
         self.colorActors = []
-        self.AddObserver("LeftButtonPressEvent", self.onLeftButtonPress)
-        self.AddObserver("LeftButtonUpEvent", self.onLeftButtonUp)
+        self.RemoveObservers("LeftButtonPressEvent")
+        self.RemoveObservers("LeftButtonUpEvent")
+        self.AddObserver("RightButtonPressEvent", self.onRightButtonPress)
+        self.AddObserver("RightButtonReleaseEvent", self.onRightButtonUp)
     
+    def onRightButtonPress(self, obj, event):
+        self.onLeftButtonPress(obj, event)
+    def onRightButtonUp(self, obj, event):
+        self.onLeftButtonUp(obj, event)
+
     def onLeftButtonPress(self, obj, event):
         start_coord = self.GetInteractor().GetEventPosition()
         self.start_position = [start_coord[0], start_coord[1]]
         print(f"start_position:{self.start_position}")
-        
-        super().OnLeftButtonDown()
+        print(f"enter to box interactor button down")
     def onLeftButtonUp(self, obj, event):
         end_coord = self.GetInteractor().GetEventPosition()
         self.end_position = [end_coord[0], end_coord[1]]

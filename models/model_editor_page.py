@@ -8,12 +8,13 @@ import vtk
 from utils.renderer import render_model
 from utils.files_io import get_writer_by_extension, read_model
 from models.meshlibStitching import run_stitching_process
+from models.model_manager import ModelManager
 
 
 class ModelEditorPage(QMainWindow):
     def __init__(self):
         super().__init__()
-
+        self.model_manager = ModelManager()
         self.init_ui()
         self.init_vtk()
         self.init_buttons()
@@ -21,7 +22,7 @@ class ModelEditorPage(QMainWindow):
         self.stackedWidget.hide()
 
     def init_ui(self):
-        uic.loadUi('ui/20250309.ui', self)
+        uic.loadUi('ui/20250309_backup.ui', self)
         layout = QVBoxLayout(self.vtkWidgetContainer)
         self.vtk_widget = QVTKRenderWindowInteractor(self)
         layout.addWidget(self.vtk_widget)
@@ -42,6 +43,7 @@ class ModelEditorPage(QMainWindow):
         self.selectBtn.clicked.connect(self.show_select_page)
         self.editBtn.clicked.connect(self.show_edit_page)
         self.sculptBtn.clicked.connect(self.show_sculpt_page)
+        self.modelListWidget.currentRowChanged.connect(self.on_model_selected)
         
     def show_select_page(self):
         # 顯示堆疊窗口
@@ -128,65 +130,48 @@ class ModelEditorPage(QMainWindow):
             self.boxBtn.setEnabled(False)
             self.style.lassoSltMode = True
             print(f"status in model editor page:{self.style.lassoSltMode}")
+    # 這是由QListWidget觸發的，當QListWidget的檔案被點選他負責通知
+    def on_model_selected(self, index):
+        # 當某個檔名，例如"model_1.stl"被點選時，會觸發這個函式
+        item = self.modelListWidget.item(index)
+        # 如果真的有item
+        if item:
+            # 只擷取檔名的文字部分
+            model_name = item.text()
+            self.model_manager.set_active_model(model_name)
+            self.style.set_active_model(model_name)
     
     def load_file(self):
         # 選擇檔案
-        file_paths, _ = QFileDialog.getOpenFileNames(self, "選擇(上顎/下顎)", "", "模型文件 (*.vtp *.obj *.ply *.stl)")
+        file_paths, _ = QFileDialog.getOpenFileNames(self, "選擇檔案", "", "模型文件 (*.vtp *.obj *.ply *.stl)")
+        self.file_paths_for_stitching = file_paths
         # 將檔名放入meshlib的縫合功能
         self.file_paths_for_stitching = file_paths
-        # 沒有檔案提示
-        if not file_paths:
-            QMessageBox.warning(self, "警告", "請至少選擇 **一個** 牙齒模型。")
-            return
-        if len(file_paths) > 2:
-            QMessageBox.warning(self, "警告", "最多只能載入 **上下顎** 牙齒模型。")
-            return
-        try:
-            # 給定上下顎模型
-            self.teeth_models = {"upper":None,"lower":None}
-            for file_path in file_paths:
-                # model_type代表上顎、下顎
-                model_type = self.checkTeethType(file_path)
-                # 讀取模型
-                poly_data = read_model(file_path)
-                # 實際poly_data對應上下鄂的索引
-                self.teeth_models[model_type] = poly_data
-                # 顯示模型
-                render_model(self.renderer,self.vtk_widget,self.teeth_models[model_type])
-            # 互動模式
-            self.style = HighlightInteractorStyle(self.teeth_models["upper"],self.teeth_models["lower"],self.renderer,self.vtk_widget.GetRenderWindow().GetInteractor())
+        for file_path in file_paths:
+            print(f"file_path:{file_path}")
+            model_name = file_paths[0].split("/")[-1]
+            # 讀取檔案
+            poly_data = read_model(file_path)
+            # 註冊新模型
+            model_name_for_list = self.model_manager.add_model(model_name, poly_data)
+            # 更新ui
+            self.modelListWidget.addItem(model_name_for_list)
+            # 顯示模型
+            render_model(self.renderer, self.vtk_widget,self.model_manager.get_model(model_name_for_list).poly_data)
+            # 初始化HighlightInteractorStyle
+            self.style = HighlightInteractorStyle(self.model_manager, self.renderer, self.vtk_widget.GetRenderWindow().GetInteractor())
             self.vtk_widget.GetRenderWindow().GetInteractor().SetInteractorStyle(self.style)
-        except ValueError as e:
-            QMessageBox.critical(self, "錯誤", str(e))
+    # 這是slef.stitchesFuncBtn的功能
     def call_stitching(self):
         # 顯示拼接功能
         print("call stitching")
-        run_stitching_process(self.file_paths_for_stitching[0])
+        stitch_file_name = run_stitching_process(self.file_paths_for_stitching[0])
         # 清除畫布
         self.renderer.RemoveAllViewProps()
         # 渲染檔案路徑stitched_merge_0075.stl的檔案
-        poly_data = read_model("stitched_merge_0075.stl")
+        poly_data = read_model(stitch_file_name)
         render_model(self.renderer, self.vtk_widget, poly_data)
-        # 互動模式
-        self.style = HighlightInteractorStyle(poly_data, None, self.renderer, self.vtk_widget.GetRenderWindow().GetInteractor())
         self.vtk_widget.GetRenderWindow().GetInteractor().SetInteractorStyle(self.style)
-        
-
-    # 給予使用者選擇上顎或下顎
-    def checkTeethType(self, file_path):
-        # 儲存下拉選項類型
-        options = {"上顎(upper)": "upper", "下顎(lower)": "lower"}
-
-        # 顯示選擇視窗
-        choice, ok = QtWidgets.QInputDialog.getItem(
-            self, "選擇牙齒模型類別", f"請選擇 {file_path} 是上顎或下顎", list(options.keys()), 0, False
-        )
-
-        # 回傳使用者選擇上顎或下顎
-        if ok:
-            return options[choice]
-        else:
-            return None  # 用戶取消選擇
     def save_file(self):
         file_path, _ = QFileDialog.getSaveFileName(self, "儲存檔案", "", "模型文件 (*.vtp *.obj *.ply *.stl)")
         if file_path:

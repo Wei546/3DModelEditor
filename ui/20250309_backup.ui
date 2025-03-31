@@ -1,0 +1,547 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>972</width>
+    <height>555</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="autoFillBackground">
+   <bool>false</bool>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QWidget" name="vtkWidgetContainer" native="true">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>0</y>
+      <width>701</width>
+      <height>521</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">#vtkWidgetContainer{
+	border-top: 2px solid #D2B48C;
+    background:rgb(0, 0, 0)
+}</string>
+    </property>
+   </widget>
+   <widget class="QWidget" name="sideMenu" native="true">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>-10</y>
+      <width>101</width>
+      <height>531</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">#sideMenu{
+	border-top: 2px solid #D2B48C;
+    background:rgb(61, 60, 60)
+}</string>
+    </property>
+    <widget class="QPushButton" name="importBtn">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>20</y>
+       <width>61</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">#importBtn{
+	border: 2px solid #D2B48C;
+    border-radius: 10px;
+}</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>new_ui_icon/upload_256.png</normaloff>new_ui_icon/upload_256.png</iconset>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>32</width>
+       <height>32</height>
+      </size>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="selectBtn">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>100</y>
+       <width>61</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">#selectBtn{
+	border: 2px solid #D2B48C;
+    border-radius: 10px;
+}</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>new_ui_icon/selection_256.png</normaloff>new_ui_icon/selection_256.png</iconset>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>32</width>
+       <height>32</height>
+      </size>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="editBtn">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>180</y>
+       <width>61</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">#editBtn{
+	border: 2px solid #D2B48C;
+    border-radius: 10px;
+}</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>new_ui_icon/document_256.png</normaloff>new_ui_icon/document_256.png</iconset>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>32</width>
+       <height>32</height>
+      </size>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="exportBtn">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>340</y>
+       <width>61</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">#exportBtn{
+	border: 2px solid #D2B48C;
+    border-radius: 10px;
+}</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>new_ui_icon/export_256.png</normaloff>new_ui_icon/export_256.png</iconset>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>32</width>
+       <height>32</height>
+      </size>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="sculptBtn">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>260</y>
+       <width>61</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">#sculptBtn{
+	border: 2px solid #D2B48C;
+    border-radius: 10px;
+}</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>new_ui_icon/sculpt_256.png</normaloff>new_ui_icon/sculpt_256.png</iconset>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>32</width>
+       <height>32</height>
+      </size>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="aiMenu" native="true">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>0</y>
+      <width>151</width>
+      <height>521</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">#aiMenu{
+	border-top: 2px solid #D2B48C;
+    background:rgb(61, 60, 60)
+}</string>
+    </property>
+    <widget class="QStackedWidget" name="stackedWidget">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>10</y>
+       <width>141</width>
+       <height>251</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">#editPage{
+	background-color: rgb(61, 60, 60)
+}
+#selectPage{
+	background-color: rgb(61, 60, 60)
+}
+#sculptPage{
+	background-color: rgb(61, 60, 60)
+}
+#stackedWidget {
+    border-radius: 10px;
+}</string>
+     </property>
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="selectPage">
+      <widget class="QWidget" name="verticalLayoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>20</y>
+         <width>141</width>
+         <height>161</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="selectVerticalLayout">
+        <item>
+         <widget class="QPushButton" name="boxBtn">
+          <property name="font">
+           <font>
+            <family>Times New Roman</family>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">#boxBtn{
+	border: 2px solid #D2B48C;
+    border-radius: 5px;
+	color: rgb(255, 255, 255);
+}</string>
+          </property>
+          <property name="text">
+           <string>Box selection</string>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>new_ui_icon/square_256.png</normaloff>new_ui_icon/square_256.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pointBtn">
+          <property name="font">
+           <font>
+            <family>Times New Roman</family>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">#pointBtn{
+	border: 2px solid #D2B48C;
+    border-radius: 5px;
+	color: rgb(255, 255, 255);
+}</string>
+          </property>
+          <property name="text">
+           <string>Point selection</string>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>new_ui_icon/list_256.png</normaloff>new_ui_icon/list_256.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="lassoBtn">
+          <property name="font">
+           <font>
+            <family>Times New Roman</family>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">#lassoBtn{
+	border: 2px solid #D2B48C;
+    border-radius: 5px;
+	color: rgb(255, 255, 255);
+}</string>
+          </property>
+          <property name="text">
+           <string>Lasso selection</string>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>new_ui_icon/lasso_256.png</normaloff>new_ui_icon/lasso_256.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="paintBrushBtn">
+          <property name="font">
+           <font>
+            <family>Times New Roman</family>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">#paintBrushBtn{
+	border: 2px solid #D2B48C;
+    border-radius: 5px;
+	color: rgb(255, 255, 255);
+}</string>
+          </property>
+          <property name="text">
+           <string>Brush</string>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>new_ui_icon/paintbrush_256.png</normaloff>new_ui_icon/paintbrush_256.png</iconset>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="QWidget" name="editPage">
+      <widget class="QWidget" name="verticalLayoutWidget_2">
+       <property name="geometry">
+        <rect>
+         <x>-1</x>
+         <y>20</y>
+         <width>141</width>
+         <height>131</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="editVerticalLayout">
+        <item>
+         <widget class="QPushButton" name="stitchesFuncBtn">
+          <property name="font">
+           <font>
+            <family>Times New Roman</family>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">#stitchesFuncBtn{
+	border: 2px solid #D2B48C;
+    border-radius: 5px;
+	color: rgb(255, 255, 255);
+}</string>
+          </property>
+          <property name="text">
+           <string>Stitching</string>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>new_ui_icon/stitches_256.png</normaloff>new_ui_icon/stitches_256.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="throughFuncBtn">
+          <property name="font">
+           <font>
+            <family>Times New Roman</family>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">#throughFuncBtn{
+	border: 2px solid #D2B48C;
+    border-radius: 5px;
+	color: rgb(255, 255, 255);
+}</string>
+          </property>
+          <property name="text">
+           <string>Select only visible</string>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>new_ui_icon/through_256.png</normaloff>new_ui_icon/through_256.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="morphFuncBtn">
+          <property name="font">
+           <font>
+            <family>Times New Roman</family>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">#morphFuncBtn{
+	border: 2px solid #D2B48C;
+    border-radius: 5px;
+	color: rgb(255, 255, 255);
+}</string>
+          </property>
+          <property name="text">
+           <string>Morphing</string>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>new_ui_icon/morph_256.png</normaloff>new_ui_icon/morph_256.png</iconset>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="QWidget" name="sculptPage">
+      <widget class="QWidget" name="verticalLayoutWidget_3">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>20</y>
+         <width>141</width>
+         <height>71</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="sculptVerticalLayout">
+        <item>
+         <widget class="QPushButton" name="subdivisionFuncBtn">
+          <property name="font">
+           <font>
+            <family>Times New Roman</family>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">#subdivisionFuncBtn{
+	border: 2px solid #D2B48C;
+    border-radius: 5px;
+	color: rgb(255, 255, 255);
+}</string>
+          </property>
+          <property name="text">
+           <string>Subdivision</string>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>new_ui_icon/subdivision_256.png</normaloff>new_ui_icon/subdivision_256.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="smoothFuncBtn">
+          <property name="font">
+           <font>
+            <family>Times New Roman</family>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">#smoothFuncBtn{
+	border: 2px solid #D2B48C;
+    border-radius: 5px;
+	color: rgb(255, 255, 255);
+}</string>
+          </property>
+          <property name="text">
+           <string>Smooth</string>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>new_ui_icon/smooth_256.png</normaloff>new_ui_icon/smooth_256.png</iconset>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </widget>
+    <widget class="QGroupBox" name="groupBox">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>260</y>
+       <width>141</width>
+       <height>251</height>
+      </rect>
+     </property>
+     <property name="title">
+      <string>GroupBox</string>
+     </property>
+     <widget class="QListWidget" name="modelListWidget">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>10</y>
+        <width>141</width>
+        <height>241</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>972</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu2_304">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="separator"/>
+    <addaction name="separator"/>
+    <addaction name="actionopen"/>
+    <addaction name="actionsave"/>
+   </widget>
+   <addaction name="menu2_304"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionopen">
+   <property name="text">
+    <string>open</string>
+   </property>
+  </action>
+  <action name="actionsave">
+   <property name="text">
+    <string>save</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

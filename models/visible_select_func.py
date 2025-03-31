@@ -47,22 +47,6 @@ class VisibleSlt:
             cell_id = selectionList.GetValue(i)  # 這裡使用 GetValue(i) 獲取網格 ID
             colors.SetTuple(cell_id, [255, 0, 0])
         poly_data.GetCellData().SetScalars(colors)
-        # # 初始化color為vtkUnsignedCharArray，因為不能使用vtk，setProperty函式更改顏色
-        # colors = vtk.vtkUnsignedCharArray()
-        # # 設定顏色
-        # colors.SetNumberOfComponents(3)
-        # # 迭代顏色
-        # for i in range(poly_data.GetNumberOfCells()):
-        #     # 如果選取的網格有在輸入的模型中
-        #     if i in [selectionList.GetValue(j) for j in range(selectionList.GetNumberOfValues())]:
-        #         # 設定顏色為紅色
-        #         colors.InsertNextTuple3(255, 0, 0)
-        #     else:
-        #         # 預設輸入模型的顏色
-        #         colors.InsertNextTuple3(255, 255, 255)
-        # # 設定顏色
-        # poly_data.GetCellData().SetScalars(colors)
-        # 取得選取的細胞數量
         self.clipped_data = self.stitching.stitching_func(selectionList,poly_data)
     def pointOnlyForVisible(self,pickCoord):
         print(f"entering to visible select func pickCoord:{pickCoord}")
