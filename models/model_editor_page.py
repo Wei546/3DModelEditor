@@ -148,7 +148,7 @@ class ModelEditorPage(QMainWindow):
         # 將檔名放入meshlib的縫合功能
         self.file_paths_for_stitching = file_paths
         for file_path in file_paths:
-            print(f"file_path:{file_path}")
+            # 擷取檔名
             model_name = file_paths[0].split("/")[-1]
             # 讀取檔案
             poly_data = read_model(file_path)
@@ -156,11 +156,14 @@ class ModelEditorPage(QMainWindow):
             model_name_for_list = self.model_manager.add_model(model_name, poly_data)
             # 更新ui
             self.modelListWidget.addItem(model_name_for_list)
-            # 顯示模型
-            render_model(self.renderer, self.vtk_widget,self.model_manager.get_model(model_name_for_list).poly_data)
+            # 使用model_manager的get_model函式取得模型
+            model_slot = self.model_manager.get_model(model_name_for_list)
+            self.renderer.AddActor(model_slot.actor)
             # 初始化HighlightInteractorStyle
             self.style = HighlightInteractorStyle(self.model_manager, self.renderer, self.vtk_widget.GetRenderWindow().GetInteractor())
             self.vtk_widget.GetRenderWindow().GetInteractor().SetInteractorStyle(self.style)
+            # 渲染模型
+            self.vtk_widget.GetRenderWindow().Render()
     # 這是slef.stitchesFuncBtn的功能
     def call_stitching(self):
         # 顯示拼接功能

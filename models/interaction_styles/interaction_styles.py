@@ -170,42 +170,52 @@ class HighlightInteractorStyle(vtkInteractorStyleTrackballCamera):
         # 如果剪裁後的資料沒有任何cell，代表沒有選取到任何東西，不做事
         if new_poly_data.GetNumberOfCells() == 0:
             return
-        self.renderer.RemoveAllViewProps()
-        self.mapper.SetInputData(new_poly_data)
-        self.actor.SetMapper(self.mapper)
-        self.renderer.AddActor(self.actor)
+        '''待修改為model_mabager的acotr、,mapper、poly_data'''
         self.GetInteractor().GetRenderWindow().Render()
+
     def keep_select_area(self,loop_points):
-        '''
         # 使用 SelectPolyData 建立封閉區域選取
         select = vtk.vtkSelectPolyData()
         select.SetInputData(self.active_model.poly_data)
         select.SetLoop(loop_points)
         select.GenerateSelectionScalarsOn()
+        select.SetSelectionModeToClosestPointRegion()
         select.SetEdgeSearchModeToDijkstra()
         select.SetSelectionModeToSmallestRegion()  # 選取最小區域
         select.Update()
 
+
         # 用 ClipPolyData 根據 scalars 做裁切（小於 0 的區域被保留）
         clip = vtk.vtkClipPolyData()
         clip.SetInputConnection(select.GetOutputPort())
-        clip.InsideOutOn() 
+        clip.InsideOutOn()
         clip.Update()
-
-        # 轉成 PolyData 顯示
+        
+        # 已經trim的poly_data，並且轉成 PolyData型別
         geometry = vtk.vtkGeometryFilter()
         geometry.SetInputConnection(clip.GetOutputPort())
         geometry.Update()
-        self.point_func.poly_data = geometry.GetOutput()
-        # 更新渲染器
-        self.renderer.RemoveAllViewProps()
-        self.mapper.SetInputData(geometry.GetOutput())
-        self.mapper.ScalarVisibilityOff()
-        self.actor.SetMapper(self.mapper)
-        self.renderer.AddActor(self.actor)
+        
+        # 移除舊的 actor
+        self.renderer.RemoveActor(self.active_model.actor)
+        
+        new_poly_data = geometry.GetOutput()
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputData(new_poly_data)
+        mapper.ScalarVisibilityOff()
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+
+        self.active_model.poly_data = new_poly_data
+        self.active_model.actor = actor
+        self.renderer.AddActor(actor)
         self.GetInteractor().GetRenderWindow().Render()
-        print("Current actor color:", self.actor.GetProperty().GetColor())
+
+
         '''
+        # 待修改為model_mabager的acotr、,mapper、poly_data
         # Step 1：選出 loop 所在的 connected surface（排除下層）
         connectivity = vtk.vtkConnectivityFilter()
         connectivity.SetInputData(self.active_model.poly_data)
@@ -233,15 +243,15 @@ class HighlightInteractorStyle(vtkInteractorStyleTrackballCamera):
         geometry = vtk.vtkGeometryFilter()
         geometry.SetInputConnection(clip.GetOutputPort())
         geometry.Update()
-        self.active_model.poly_data = geometry.GetOutput()
+        
 
         # Step 5：更新畫面，只顯示選取結果
         self.renderer.RemoveAllViewProps()
-        self.mapper.SetInputData(self.active_model.poly_data)
-        self.mapper.ScalarVisibilityOff()
-        self.actor.SetMapper(self.mapper)
+
         self.renderer.AddActor(self.actor)
         self.GetInteractor().GetRenderWindow().Render()
+        '''
+        # 使用 SelectPolyData 建立封閉區域選取
         
         
     def onRightButtonDown(self, obj, event):

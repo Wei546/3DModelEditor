@@ -45,7 +45,7 @@ class VisibleSlt:
         poly_data.GetCellData().SetScalars(colors)
         for i in range(selectionList.GetNumberOfTuples()):
             cell_id = selectionList.GetValue(i)  # 這裡使用 GetValue(i) 獲取網格 ID
-            colors.SetTuple(cell_id, [255, 0, 0])
+            colors.SetTuple(cell_id, [0, 255, 0])
         poly_data.GetCellData().SetScalars(colors)
         self.clipped_data = self.stitching.stitching_func(selectionList,poly_data)
     def pointOnlyForVisible(self,pickCoord):

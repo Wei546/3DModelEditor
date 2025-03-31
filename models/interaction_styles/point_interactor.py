@@ -34,10 +34,18 @@ class TrimVisualize:
         self.trim_actor.GetProperty().SetColor(0.0, 1.0, 0.0)
         # 加入倒渲染器
         self.renderer.AddActor(self.trim_actor)
+    def removeLine(self):
+        self.renderer.RemoveActor(self.trim_actor)
+        self.projected_points.Initialize()
+        self.poly_data_trim.Initialize()
+        self.trim_mapper = vtk.vtkPolyDataMapper()
+        self.trim_actor = vtk.vtkActor()
+
 class PointInteractor(vtkInteractorStyleTrackballCamera):
     # poly_data是輸入的3D模型
     def __init__(self,poly_data,interactor,renderer):
         super().__init__()
+        self.trimer = TrimVisualize(renderer)
         self.renderer = renderer
         self.SetInteractor(interactor)
         # 點選取的互動器
@@ -172,12 +180,15 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
             locator.FindClosestPoint(point, closest_point, cell_id, sub_id, dist2)
             projected_points.append(point)
             self.total_path_point.InsertNextPoint(point)
-        # 實體化線段
-        createLine = TrimVisualize(self.renderer)
+        
+        # 初始化Trim
+        create_line = TrimVisualize(self.renderer)
         # 連接點與線段
-        createLine.connect_point_to_line(projected_points)
-        # 在unRenderAllSelectors()中會清除
-        self.activeSelectors.append(createLine)
+        create_line.connect_point_to_line(projected_points)
+        # 儲存視覺化線段
+        self.lineActors.append(create_line.trim_actor)
+        # 互動器更新
+        self.GetInteractor().GetRenderWindow().Render()
     # 封閉選取範圍；interactor是HightlightInteractorStyle的互動器，renderer是HightlightInteractorStyle的渲染器
     def closeArea(self):
         # 最後一段：補 D → A
@@ -195,6 +206,10 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
         for actor in self.sphereActors:
             # 移除actor
             self.renderer.RemoveActor(actor)
+        # 清除所有視覺化線段
+        for actor in self.lineActors:
+            # 移除actor
+            self.renderer.RemoveActor(actor)
         # 清除點選資料
         self.pathList = []
         # 清除實際線段數量
@@ -203,6 +218,8 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
         self.clickPath.Reset()
         # 清除原點列表
         self.sphereActors.clear()
+        # 清除線段視覺化
+        self.trimer.removeLine()
         # 渲染畫面
         self.GetInteractor().GetRenderWindow().Render()
         
