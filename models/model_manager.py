@@ -67,3 +67,5 @@ class ModelManager:
 
     def get_all_models(self):
         return self.models
+    def get_all_model_names(self):
+        return list(self.models.keys())

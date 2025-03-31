@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtWidgets import QVBoxLayout, QFileDialog, QMessageBox, QMainWindow
+from PyQt5.QtWidgets import QVBoxLayout, QFileDialog, QMessageBox, QMainWindow,QDialog
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from models.interaction_styles.interaction_styles import HighlightInteractorStyle
 from models.visible_select_func import VisibleSlt
@@ -9,6 +9,8 @@ from utils.renderer import render_model
 from utils.files_io import get_writer_by_extension, read_model
 from models.meshlibStitching import run_stitching_process
 from models.model_manager import ModelManager
+from models.align_dialog import AlignDialog
+from models.vtkAlignModel import align_models_icp
 
 
 class ModelEditorPage(QMainWindow):
@@ -44,6 +46,7 @@ class ModelEditorPage(QMainWindow):
         self.editBtn.clicked.connect(self.show_edit_page)
         self.sculptBtn.clicked.connect(self.show_sculpt_page)
         self.modelListWidget.currentRowChanged.connect(self.on_model_selected)
+        self.alignFuncBtn.clicked.connect(self.call_align)
         
     def show_select_page(self):
         # 顯示堆疊窗口
@@ -175,6 +178,25 @@ class ModelEditorPage(QMainWindow):
         poly_data = read_model(stitch_file_name)
         render_model(self.renderer, self.vtk_widget, poly_data)
         self.vtk_widget.GetRenderWindow().GetInteractor().SetInteractorStyle(self.style)
+    def call_align(self):
+        model_names = self.model_manager.get_all_model_names()
+        dialog = AlignDialog(model_names, self)
+        if dialog.exec_() == QDialog.Accepted:
+            source_name, target_name = dialog.get_selected_models()
+            print("使用者選擇的對齊模型:", source_name, "→", target_name)
+            print(f"source type:{type(source_name)}, target type:{type(target_name)}")
+            # 取得 poly_data
+            source_slot = self.model_manager.get_model(source_name)
+            target_slot = self.model_manager.get_model(target_name)
+
+            # 這裡呼叫你的對齊函式
+            aligned_poly_data = align_models_icp(source_slot.poly_data, target_slot.poly_data)
+            # 更新模型資料與視覺化
+            self.renderer.RemoveActor(source_slot.actor)  # 移除原本的 actor
+            source_slot.update_poly_data(aligned_poly_data)  # 更新 polydata 與 actor
+            self.renderer.AddActor(source_slot.actor)  # 加入新 actor
+            self.vtk_widget.GetRenderWindow().Render()
+            
     def save_file(self):
         file_path, _ = QFileDialog.getSaveFileName(self, "儲存檔案", "", "模型文件 (*.vtp *.obj *.ply *.stl)")
         if file_path:
