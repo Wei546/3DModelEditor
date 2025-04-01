@@ -26,4 +26,20 @@ def align_models_icp(source_polydata, target_polydata):
     # 回傳對齊後的模型
     aligned_polydata = vtk.vtkPolyData()
     aligned_polydata.DeepCopy(transform_filter.GetOutput())
+    # 輸出對齊後的模型與目標模型合併
+    aligned_polydata_append = vtk.vtkAppendPolyData()
+    aligned_polydata_append.AddInputData(transform_filter.GetOutput())
+    aligned_polydata_append.AddInputData(target_polydata)
+    aligned_polydata_append.Update()
+    writer = vtk.vtkSTLWriter()
+    writer.SetFileName("aligned_model_append.stl")
+    writer.SetInputData(aligned_polydata_append.GetOutput())
+    writer.SetFileTypeToBinary()
+    writer.Write()
+    writer_only_align = vtk.vtkSTLWriter()
+    writer_only_align.SetFileName("aligned_model_only_align.stl")
+    writer_only_align.SetInputData(aligned_polydata)
+    writer_only_align.SetFileTypeToBinary()
+    writer_only_align.Write()
+    print("aligned_model_append.stl")
     return aligned_polydata

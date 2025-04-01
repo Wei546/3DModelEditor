@@ -147,23 +147,24 @@ class ModelEditorPage(QMainWindow):
     def load_file(self):
         # 選擇檔案
         file_paths, _ = QFileDialog.getOpenFileNames(self, "選擇檔案", "", "模型文件 (*.vtp *.obj *.ply *.stl)")
-        self.file_paths_for_stitching = file_paths
         # 將檔名放入meshlib的縫合功能
         self.file_paths_for_stitching = file_paths
         for file_path in file_paths:
             # 擷取檔名
             model_name = file_paths[0].split("/")[-1]
-            # 讀取檔案
+            # 接收在files_io.py的read_model函式回傳的poly_data
             poly_data = read_model(file_path)
-            # 註冊新模型
+            # 檔名+自己的polyData資料，等等要存入model_manager
             model_name_for_list = self.model_manager.add_model(model_name, poly_data)
-            # 更新ui
+            # 將檔名放入QListWidget，接收的model_name_for_list是檔案名稱
             self.modelListWidget.addItem(model_name_for_list)
-            # 使用model_manager的get_model函式取得模型
+            # 等等可以利用model_name_for_list來取得poly_data、actor等資料
             model_slot = self.model_manager.get_model(model_name_for_list)
+            # 將model_slot的actor加入renderer
             self.renderer.AddActor(model_slot.actor)
             # 初始化HighlightInteractorStyle
             self.style = HighlightInteractorStyle(self.model_manager, self.renderer, self.vtk_widget.GetRenderWindow().GetInteractor())
+            # 設定互動器
             self.vtk_widget.GetRenderWindow().GetInteractor().SetInteractorStyle(self.style)
             # 渲染模型
             self.vtk_widget.GetRenderWindow().Render()
@@ -171,11 +172,13 @@ class ModelEditorPage(QMainWindow):
     def call_stitching(self):
         # 顯示拼接功能
         print("call stitching")
+        # 懶惰法(*這邊需要優化不是選取寫死的的檔案*)
         stitch_file_name = run_stitching_process(self.file_paths_for_stitching[0])
         # 清除畫布
         self.renderer.RemoveAllViewProps()
         # 渲染檔案路徑stitched_merge_0075.stl的檔案
         poly_data = read_model(stitch_file_name)
+        # 懶惰法(*這邊需要優化不是儲存在model_manager*)
         render_model(self.renderer, self.vtk_widget, poly_data)
         self.vtk_widget.GetRenderWindow().GetInteractor().SetInteractorStyle(self.style)
     def call_align(self):
@@ -183,7 +186,7 @@ class ModelEditorPage(QMainWindow):
         dialog = AlignDialog(model_names, self)
         if dialog.exec_() == QDialog.Accepted:
             source_name, target_name = dialog.get_selected_models()
-            print("使用者選擇的對齊模型:", source_name, "→", target_name)
+            print("使用者選擇的對齊模型:", source_name, "->", target_name)
             print(f"source type:{type(source_name)}, target type:{type(target_name)}")
             # 取得 poly_data
             source_slot = self.model_manager.get_model(source_name)
@@ -194,6 +197,7 @@ class ModelEditorPage(QMainWindow):
             # 更新模型資料與視覺化
             self.renderer.RemoveActor(source_slot.actor)  # 移除原本的 actor
             source_slot.update_poly_data(aligned_poly_data)  # 更新 polydata 與 actor
+
             self.renderer.AddActor(source_slot.actor)  # 加入新 actor
             self.vtk_widget.GetRenderWindow().Render()
             
