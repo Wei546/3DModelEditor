@@ -443,7 +443,7 @@
           </property>
           <property name="icon">
            <iconset>
-            <normaloff>new_ui_icon/align_256.png</normaloff>new_ui_icon/align_256.png</iconset>
+            <normaloff>new_ui_icon/morph_256.png</normaloff>new_ui_icon/morph_256.png</iconset>
           </property>
          </widget>
         </item>

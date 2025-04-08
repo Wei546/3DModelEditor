@@ -11,6 +11,9 @@ from models.meshlibStitching import run_stitching_process
 from models.model_manager import ModelManager
 from models.align_dialog import AlignDialog
 from models.vtkAlignModel import align_models_icp
+from models.stitch_slt_btn_model import MeshProcessor
+from workerThread import StitchingWorker
+from loadingDialog import LoadingDialog
 
 
 class ModelEditorPage(QMainWindow):
@@ -170,17 +173,30 @@ class ModelEditorPage(QMainWindow):
             self.vtk_widget.GetRenderWindow().Render()
     # 這是slef.stitchesFuncBtn的功能
     def call_stitching(self):
-        # 顯示拼接功能
-        print("call stitching")
-        # 懶惰法(*這邊需要優化不是選取寫死的的檔案*)
-        stitch_file_name = run_stitching_process(self.file_paths_for_stitching[0])
+        defect_path = "resources/00109/data0109down.stl"
+        repair_path = "resources/00109/ai_data0109down_smooth.stl"
+        self.loading_dialog = LoadingDialog(self)
+        self.loading_dialog.start()
+        
+        self.worker = StitchingWorker(defect_path, repair_path)
+        self.worker.finished.connect(self.on_stitching_complete)
+        self.worker.start()
+        
+    def on_stitching_complete(self):
+        self.loading_dialog.stop()
+        QMessageBox.information(self, "完成", f"處理完成！")
         # 清除畫布
         self.renderer.RemoveAllViewProps()
         # 渲染檔案路徑stitched_merge_0075.stl的檔案
-        poly_data = read_model(stitch_file_name)
+        poly_data_reader = vtk.vtkSTLReader()
+        poly_data_reader.SetFileName(self.worker.result)
+        print(f"self.worker.get_result():{self.worker.result}")
+        poly_data_reader.Update()
+        poly_data = poly_data_reader.GetOutput()
         # 懶惰法(*這邊需要優化不是儲存在model_manager*)
         render_model(self.renderer, self.vtk_widget, poly_data)
         self.vtk_widget.GetRenderWindow().GetInteractor().SetInteractorStyle(self.style)
+        self.vtk_widget.GetRenderWindow().Render()
     def call_align(self):
         model_names = self.model_manager.get_all_model_names()
         dialog = AlignDialog(model_names, self)

@@ -37,9 +37,10 @@ def align_models_icp(source_polydata, target_polydata):
     writer.SetFileTypeToBinary()
     writer.Write()
     writer_only_align = vtk.vtkSTLWriter()
-    writer_only_align.SetFileName("aligned_model_only_align.stl")
+    writer_only_align.SetFileName("model_only_align_0075.stl")
     writer_only_align.SetInputData(aligned_polydata)
     writer_only_align.SetFileTypeToBinary()
     writer_only_align.Write()
     print("aligned_model_append.stl")
     return aligned_polydata
+    

@@ -38,6 +38,12 @@ def run_stitching_process(file_path):
     # 平滑新面
     mrmeshpy.positionVertsSmoothly(shell,mrmeshpy.getInnerVerts(shell.topology,newFaces))
 
+    # 原本的平滑後，再加這段
+    remesh_params = mrmeshpy.RemeshSettings()
+    remesh_params.region = newFaces
+    mrmeshpy.remesh(shell, remesh_params)
+
+
     #儲存修改後的網格
     mrmeshpy.saveMesh(shell, f"stitched_{original_file_name}.stl")
     return f"stitched_{original_file_name}.stl"
