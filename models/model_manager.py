@@ -26,6 +26,11 @@ class ModelSlot:
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
         self.actor = actor
+    def cover_old_poly_data(self, new_poly_data):
+        # 將新的poly_data覆蓋到舊的poly_data上，這樣就不會影響到原本的poly_data了
+        self.poly_data.DeepCopy(new_poly_data)
+        # 更新actor的資料
+        self.actor.GetMapper().SetInputData(self.poly_data)
 
 
 # 負責管理模型的類別，這個類別會把所有的模型都放在這裡面，並且可以選取目前正在編輯的模型

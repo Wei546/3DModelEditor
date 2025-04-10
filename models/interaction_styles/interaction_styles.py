@@ -5,6 +5,7 @@ from models.interaction_styles.point_interactor import TrimVisualize
 from models.interaction_styles.lasso_interactor import LassoInteractor
 from models.interaction_styles.box_interactor import BoxInteractor
 from models.visible_select_func import VisibleSlt
+import os
 
 class HighlightInteractorStyle(vtkInteractorStyleTrackballCamera):
     def __init__(self, model_manager, renderer,interactor):
@@ -207,7 +208,20 @@ class HighlightInteractorStyle(vtkInteractorStyleTrackballCamera):
 
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
-
+        #建立儲存路徑
+        current_dir = os.path.dirname(os.path.abspath(__file__)) #取得當前檔案的絕對路徑
+        parent_dir = os.path.dirname(current_dir) #取得當前檔案的父資料夾路徑
+        stitch_dir = os.path.join(parent_dir, "stitchResult")  
+        if not os.path.exists(stitch_dir):
+            os.makedirs(stitch_dir)
+            # 建立輸出的完整路徑
+        output_path = os.path.join(stitch_dir, "./inlay_surface.stl")  # 將檔案儲存到指定資料夾
+        # 儲存檔案
+        writer = vtk.vtkSTLWriter()
+        writer.SetFileName(output_path)
+        writer.SetInputData(new_poly_data)
+        writer.SetFileTypeToBinary()
+        writer.Write()
         self.active_model.poly_data = new_poly_data
         self.active_model.actor = actor
         self.renderer.AddActor(actor)

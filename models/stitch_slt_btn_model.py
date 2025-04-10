@@ -39,38 +39,6 @@ class MeshProcessor:
         output_file_name = f"./only_align_{self.file_name}.stl" # 設定輸出檔案路徑
         return self.save_to_stitch_folder(output_file_name,aligned_polydata) # 儲存對齊後的模型
 
-    
-    def get_inlay_surface(self, defect_teeth, repair_teeth):
-        '''以空間距離，根據兩個牙齒模型的距離，計算出接觸面積，取得inlay surface'''
-        distance_filter = vtk.vtkDistancePolyDataFilter() # 創建距離濾波器，等等要計算欲測量物以及參考物的距離
-        distance_filter.SetInputData(0, repair_teeth) # 修復牙為欲測量物
-        distance_filter.SetInputData(1, defect_teeth) # 缺陷牙為參考物
-        distance_filter.SignedDistanceOff()  # 只取絕對值
-        distance_filter.Update() # 更新濾波器以計算距離
-  
-        distance_data = distance_filter.GetOutput() # 取得距離資料
-
-        threshold = vtk.vtkThreshold()  # 選取距離小於一定閾值的 patch（可手動調整）
-        threshold.SetInputData(distance_data) # 設定輸入資料為距離資料
-
-        threshold.SetThresholdFunction(vtk.vtkThreshold.THRESHOLD_BETWEEN) # 設定閾值函數為介於兩者之間，擷取閾值內的面積
-        threshold.SetLowerThreshold(0.55) # 設定下閾值
-        threshold.SetUpperThreshold(4) # 設定上閾值
-        threshold.Update() # 更新濾波器以計算閾值
-        
-        geometry_filter = vtk.vtkGeometryFilter() # 將 patch 轉成 PolyData
-        geometry_filter.SetInputConnection(threshold.GetOutputPort()) # 設定輸入資料為閾值資料
-        geometry_filter.Update() # 更新濾波器以轉換資料
-        contact_patch = geometry_filter.GetOutput() # 取得接觸面積資料
-        
-        connectivity_filter = vtk.vtkConnectivityFilter() # 連通性過濾器，只保留最大區塊；因為邊邊角角會有殘留物，只取inlay_surface
-        connectivity_filter.SetInputData(contact_patch) # 設定輸入資料為接觸面積資料
-        connectivity_filter.SetExtractionModeToLargestRegion() # 設定擷取模式為最大區域
-        connectivity_filter.Update() # 更新濾波器以擷取最大區域
-        main_patch = connectivity_filter.GetOutput() # 取得最大區域資料
-
-        output_file = f"./inlay_surface_{self.file_name}.stl"
-        return self.save_to_stitch_folder(output_file,main_patch)  # 回傳inlay surface的絕對路徑
     def get_hole(self, defect_teeth, repair_teeth):
         '''以空間距離，根據兩個牙齒模型的距離，計算出接觸面積，取得inlay surface'''
         distance_filter = vtk.vtkDistancePolyDataFilter() # 創建距離濾波器，等等要計算欲測量物以及參考物的距離
@@ -122,7 +90,7 @@ class MeshProcessor:
         align_repair_file_reader.SetFileName(self.repair_file_path) # 設置對齊後的修復牙檔案路徑
         align_repair_file_reader.Update()  # 更新以讀取檔案
 
-        self.inlay_file_path = self.get_inlay_surface(defect_file_reader.GetOutput(), align_repair_file_reader.GetOutput())  # 取得inlay surface
+        self.inlay_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),"stitchResult","./inlay_surface.stl")  # 取得inlay surface
         self.hole_file_path = self.get_hole(defect_file_reader.GetOutput(), align_repair_file_reader.GetOutput())  # 取得hole surface
         print(f"已儲存合併結果至: {output_file}")  # 列印儲存訊息
 

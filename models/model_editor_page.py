@@ -211,10 +211,11 @@ class ModelEditorPage(QMainWindow):
             # 這裡呼叫你的對齊函式
             aligned_poly_data = align_models_icp(source_slot.poly_data, target_slot.poly_data)
             # 更新模型資料與視覺化
-            self.renderer.RemoveActor(source_slot.actor)  # 移除原本的 actor
-            source_slot.update_poly_data(aligned_poly_data)  # 更新 polydata 與 actor
 
-            self.renderer.AddActor(source_slot.actor)  # 加入新 actor
+            self.model_manager.get_model(source_name).cover_old_poly_data(aligned_poly_data)  # 更新 polydata 與 actor
+            self.model_manager.get_model(source_name).actor.GetProperty().SetOpacity(0.8)  # 設定透明度
+            self.renderer.AddActor(self.model_manager.get_model(source_name).actor)  # 加入新 actor
+
             self.vtk_widget.GetRenderWindow().Render()
             
     def save_file(self):

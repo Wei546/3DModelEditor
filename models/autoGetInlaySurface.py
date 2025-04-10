@@ -1,5 +1,5 @@
 import vtk
-'''
+
 def get_inlay_surface(hole_teeth, repair_teeth):
     distance_filter = vtk.vtkDistancePolyDataFilter()
     distance_filter.SetInputData(0, repair_teeth)
@@ -15,8 +15,8 @@ def get_inlay_surface(hole_teeth, repair_teeth):
     threshold.SetInputData(distance_data)
 
     threshold.SetThresholdFunction(vtk.vtkThreshold.THRESHOLD_BETWEEN)
-    threshold.SetLowerThreshold(0.4)
-    threshold.SetUpperThreshold(0.5)
+    threshold.SetLowerThreshold(0)
+    threshold.SetUpperThreshold(0.1)
     threshold.Update()
 
 
@@ -65,6 +65,9 @@ def get_inlay_surface(hole_teeth, repair_teeth):
     render_window_interactor.Start()
     # 儲存檔案
     save_file("contact_patch_surface.stl", main_patch)
+
+
+
 '''
 def get_inlay_surface(hole_teeth, repair_teeth):
     distance_filter = vtk.vtkDistancePolyDataFilter()
@@ -137,6 +140,8 @@ def get_inlay_surface(hole_teeth, repair_teeth):
     interactor.Start()
     # 儲存檔案
     save_file("contact_patch_surface.stl", main_patch)
+'''
+
 
 def save_file(file_path, polydata):
     '''儲存檔案'''
@@ -151,7 +156,7 @@ reader_hole = vtk.vtkSTLReader()
 reader_hole.SetFileName("resources/00109/data0109down.stl")
 reader_hole.Update()
 reader_repair = vtk.vtkSTLReader()
-reader_repair.SetFileName("resources/repair_teeth_align/repair_teeth_align_0109_down.stl")
+reader_repair.SetFileName("resources/repair_teeth_align/repair_teeth_align_0109.stl")
 reader_repair.Update()
 # 取得polydata
 hole_polydata = reader_hole.GetOutput()
