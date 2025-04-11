@@ -1,1 +1,1 @@
-selection_point
+class PolygonInteractor

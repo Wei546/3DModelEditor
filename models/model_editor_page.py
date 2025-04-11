@@ -10,6 +10,7 @@ from utils.files_io import get_writer_by_extension, read_model
 from models.meshlibStitching import run_stitching_process
 from models.model_manager import ModelManager
 from models.align_dialog import AlignDialog
+from models.stitch_dialog import StitchDialog
 from models.vtkAlignModel import align_models_icp
 from models.stitch_slt_btn_model import MeshProcessor
 from workerThread import StitchingWorker
@@ -150,15 +151,13 @@ class ModelEditorPage(QMainWindow):
     def load_file(self):
         # 選擇檔案
         file_paths, _ = QFileDialog.getOpenFileNames(self, "選擇檔案", "", "模型文件 (*.vtp *.obj *.ply *.stl)")
-        # 將檔名放入meshlib的縫合功能
-        self.file_paths_for_stitching = file_paths
         for file_path in file_paths:
             # 擷取檔名
             model_name = file_paths[0].split("/")[-1]
             # 接收在files_io.py的read_model函式回傳的poly_data
             poly_data = read_model(file_path)
             # 檔名+自己的polyData資料，等等要存入model_manager
-            model_name_for_list = self.model_manager.add_model(model_name, poly_data)
+            model_name_for_list = self.model_manager.add_model(model_name, poly_data,file_path)
             # 將檔名放入QListWidget，接收的model_name_for_list是檔案名稱
             self.modelListWidget.addItem(model_name_for_list)
             # 等等可以利用model_name_for_list來取得poly_data、actor等資料
@@ -173,14 +172,20 @@ class ModelEditorPage(QMainWindow):
             self.vtk_widget.GetRenderWindow().Render()
     # 這是slef.stitchesFuncBtn的功能
     def call_stitching(self):
-        defect_path = "resources/00109/data0109down.stl"
-        repair_path = "resources/00109/ai_data0109down_smooth.stl"
-        self.loading_dialog = LoadingDialog(self)
-        self.loading_dialog.start()
-        
-        self.worker = StitchingWorker(defect_path, repair_path)
-        self.worker.finished.connect(self.on_stitching_complete)
-        self.worker.start()
+        model_names = self.model_manager.get_all_model_names()
+        dialog = StitchDialog(model_names, self)
+
+        if dialog.exec_() == QDialog.Accepted:
+            defect_name, repair_name = dialog.get_selected_models()
+            defect_path = self.model_manager.get_model(defect_name).file_path
+            repair_path = self.model_manager.get_model(repair_name).file_path
+
+            self.loading_dialog = LoadingDialog(self)
+            self.loading_dialog.start()
+            
+            self.worker = StitchingWorker(defect_path, repair_path)
+            self.worker.finished.connect(self.on_stitching_complete)
+            self.worker.start()
         
     def on_stitching_complete(self):
         self.loading_dialog.stop()

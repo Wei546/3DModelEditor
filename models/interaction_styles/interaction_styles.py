@@ -122,9 +122,9 @@ class HighlightInteractorStyle(vtkInteractorStyleTrackballCamera):
             # self.removeCells(self.poly_data_1,self.point_func.loop)
             # 非穿透模式
             
-            self.keep_select_area(self.point_func.total_path_point)
+            self.cut_select_area(self.point_func.total_path_point)
             # 清除所有點的視覺化資料、最短路徑資料等
-            self.point_func.unRenderAllSelectors()
+            
         # 套索刪除範圍，滿足按下delete鍵且套索選取模式為True
         elif self.key == "Delete" and self.lassoSltMode:
             # 移除選取範圍
@@ -173,7 +173,56 @@ class HighlightInteractorStyle(vtkInteractorStyleTrackballCamera):
             return
         '''待修改為model_mabager的acotr、,mapper、poly_data'''
         self.GetInteractor().GetRenderWindow().Render()
+    '''刪除選取範圍'''
+    def cut_select_area(self,loop_points):
+        # 使用 SelectPolyData 建立封閉區域選取
+        select = vtk.vtkSelectPolyData()
+        select.SetInputData(self.active_model.poly_data)
+        select.SetLoop(loop_points)
+        select.GenerateSelectionScalarsOn()
+        select.SetSelectionModeToClosestPointRegion()
+        select.SetEdgeSearchModeToDijkstra()
+        select.SetSelectionModeToSmallestRegion()  # 選取最小區域
+        select.Update()
 
+
+        # 用 ClipPolyData 根據 scalars 做裁切（小於 0 的區域被保留）
+        clip = vtk.vtkClipPolyData()
+        clip.SetInputConnection(select.GetOutputPort())
+        clip.InsideOutOff()
+        clip.Update()
+        
+        # 已經trim的poly_data，並且轉成 PolyData型別
+        geometry = vtk.vtkGeometryFilter()
+        geometry.SetInputConnection(clip.GetOutputPort())
+        geometry.Update()
+        
+        new_poly_data = geometry.GetOutput()
+
+        # 清除未連接部份
+        connect_new_poly_data = vtk.vtkConnectivityFilter()
+        connect_new_poly_data.SetInputData(new_poly_data)
+        connect_new_poly_data.SetExtractionModeToLargestRegion()
+        connect_new_poly_data.Update()
+        new_poly_data = connect_new_poly_data.GetOutput()
+
+        if self.active_model.actor:
+            self.renderer.RemoveActor(self.active_model.actor)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputData(new_poly_data)
+        mapper.ScalarVisibilityOff()
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+
+        self.active_model.poly_data = new_poly_data
+        self.active_model.actor = actor
+        self.renderer.AddActor(actor)
+        self.GetInteractor().GetRenderWindow().Render()
+        self.point_func.unRenderAllSelectors(self.active_model.poly_data)
+
+    '''保留inlay surface功能'''
     def keep_select_area(self,loop_points):
         # 使用 SelectPolyData 建立封閉區域選取
         select = vtk.vtkSelectPolyData()
@@ -197,10 +246,16 @@ class HighlightInteractorStyle(vtkInteractorStyleTrackballCamera):
         geometry.SetInputConnection(clip.GetOutputPort())
         geometry.Update()
         
-        # 移除舊的 actor
-        self.renderer.RemoveActor(self.active_model.actor)
+        
         
         new_poly_data = geometry.GetOutput()
+
+        # 清除未連接部份
+        connect_new_poly_data = vtk.vtkConnectivityFilter()
+        connect_new_poly_data.SetInputData(new_poly_data)
+        connect_new_poly_data.SetExtractionModeToLargestRegion()
+        connect_new_poly_data.Update()
+        new_poly_data = connect_new_poly_data.GetOutput()
 
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(new_poly_data)
@@ -208,6 +263,7 @@ class HighlightInteractorStyle(vtkInteractorStyleTrackballCamera):
 
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
+
         #建立儲存路徑
         current_dir = os.path.dirname(os.path.abspath(__file__)) #取得當前檔案的絕對路徑
         parent_dir = os.path.dirname(current_dir) #取得當前檔案的父資料夾路徑

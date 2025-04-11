@@ -106,7 +106,6 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
     def onRightButtonUp(self,obj,event):
         return
     def onLeftButtonDown(self,obj,event):
-        
         self.total_path_point = vtk.vtkPoints()
         # 初始化點選位置座標
         clickPos = self.GetInteractor().GetEventPosition()
@@ -114,6 +113,7 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
         picker = vtk.vtkCellPicker()
         # 選取位置轉成3D座標
         picker.Pick(clickPos[0],clickPos[1],0,self.renderer)
+
         # 給予pick3DCoord資料
         self.pick3DCoord.Pick(clickPos[0],clickPos[1],0,self.renderer)
         self.clickPath = vtk.vtkPoints()
@@ -201,7 +201,9 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
         
 
     # 清除選取輔助樣式；interactor是HightlightInteractorStyle的互動器，renderer是HightlightInteractorStyle的渲染器
-    def unRenderAllSelectors(self):
+    def unRenderAllSelectors(self,cut_poly_data = None):
+        self.poly_data = cut_poly_data
+
         # 清除所有視覺化點
         for actor in self.sphereActors:
             # 移除actor
