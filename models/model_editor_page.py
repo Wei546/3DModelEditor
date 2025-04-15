@@ -75,6 +75,8 @@ class ModelEditorPage(QMainWindow):
         self.throughFunc = VisibleSlt(self.renderer, self.vtk_widget.GetRenderWindow().GetInteractor())
 
     def holdBtnPress(self):
+        if self.prevent_before_input() == False:
+            return
         self.holdSltBtnMode = not self.holdSltBtnMode
         self.holdSltBtn.setStyleSheet("background-color: #F5DEB3;" if self.holdSltBtnMode else "background-color: none;")
         self.pointBtn.setEnabled(not self.holdSltBtnMode)
@@ -97,6 +99,8 @@ class ModelEditorPage(QMainWindow):
         self.style.enable_stitching_mode()
 
     def boxBtnPress(self):
+        if self.prevent_before_input() == False:
+            return
         if self.style.boxSltMode:
             self.style.unable_box_mode()
             self.lassoBtn.setEnabled(True)
@@ -111,6 +115,8 @@ class ModelEditorPage(QMainWindow):
             print(f"status in model editor page:{self.style.boxSltMode}")
 
     def pointBtnPress(self):
+       if self.prevent_before_input() == False:
+            return
        if self.style.pointSltMode:
             self.style.unable_point_mode()
             self.lassoBtn.setEnabled(True)
@@ -125,6 +131,8 @@ class ModelEditorPage(QMainWindow):
             print(f"status in model editor page:{self.style.pointSltMode}")
 
     def lassoBtnPress(self):
+        if self.prevent_before_input() == False:
+            return
         if self.style.lassoSltMode:
             self.style.unable_lasso_mode()
             self.pointBtn.setEnabled(True)
@@ -137,6 +145,11 @@ class ModelEditorPage(QMainWindow):
             self.boxBtn.setEnabled(False)
             self.style.lassoSltMode = True
             print(f"status in model editor page:{self.style.lassoSltMode}")
+    def prevent_before_input(self):
+        if self.model_manager.active_model_name is None:
+            QMessageBox.warning(self, "警告", "請先選擇模型！")
+            return False
+        return True
     # 這是由QListWidget觸發的，當QListWidget的檔案被點選他負責通知
     def on_model_selected(self, index):
         # 當某個檔名，例如"model_1.stl"被點選時，會觸發這個函式
