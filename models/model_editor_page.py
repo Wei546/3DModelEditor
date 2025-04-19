@@ -106,28 +106,32 @@ class ModelEditorPage(QMainWindow):
             self.lassoBtn.setEnabled(True)
             self.pointBtn.setEnabled(True)
             self.style.boxSltMode = False
+            QMessageBox.information(self, "提示", "已取消框選模式！")
             print(f"status in model editor page:{self.style.boxSltMode}")
         else:
             self.style.enable_box_mode()
             self.lassoBtn.setEnabled(False)
             self.pointBtn.setEnabled(False)
             self.style.boxSltMode = True
+            QMessageBox.information(self, "提示", "已開啟框選模式！")
             print(f"status in model editor page:{self.style.boxSltMode}")
 
     def pointBtnPress(self):
-       if self.prevent_before_input() == False:
+        if self.prevent_before_input() == False:
             return
-       if self.style.pointSltMode:
+        if self.style.pointSltMode:
             self.style.unable_point_mode()
             self.lassoBtn.setEnabled(True)
             self.boxBtn.setEnabled(True)
             self.style.pointSltMode = False
+            QMessageBox.information(self, "提示", "已取消點選模式！")
             print(f"status in model editor page:{self.style.pointSltMode}")
-       else:
+        else:
             self.style.enable_point_mode()
             self.lassoBtn.setEnabled(False)
             self.boxBtn.setEnabled(False)
             self.style.pointSltMode = True
+            QMessageBox.information(self, "提示", "已開啟點選模式！")   
             print(f"status in model editor page:{self.style.pointSltMode}")
 
     def lassoBtnPress(self):
@@ -138,12 +142,14 @@ class ModelEditorPage(QMainWindow):
             self.pointBtn.setEnabled(True)
             self.boxBtn.setEnabled(True)
             self.style.lassoSltMode = False
+            QMessageBox.information(self, "提示", "已取消套索選取模式！")
             print(f"status in model editor page:{self.style.lassoSltMode}")
         else:
             self.style.enable_lasso_mode()
             self.pointBtn.setEnabled(False)
             self.boxBtn.setEnabled(False)
             self.style.lassoSltMode = True
+            QMessageBox.information(self, "提示", "已開啟套索選取模式！")
             print(f"status in model editor page:{self.style.lassoSltMode}")
     def prevent_before_input(self):
         if self.model_manager.active_model_name is None:

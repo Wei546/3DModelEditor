@@ -43,6 +43,11 @@ class HighlightInteractorStyle(vtkInteractorStyleTrackballCamera):
         self.AddObserver("LeftButtonReleaseEvent", self.onLeftButtonUp)
         self.AddObserver("RightButtonPressEvent", self.onRightButtonDown)
         self.AddObserver("RightButtonReleaseEvent", self.onRightButtonUp)
+        self.AddObserver("MiddleButtonPressEvent", self.onMiddleButtonPressEvent)
+        self.AddObserver("MiddleButtonReleaseEvent", self.onMiddleButtonReleaseEvent)
+        self.AddObserver("MouseWheelForwardEvent", self.onMouseWheelForwardEvent)
+        self.AddObserver("MouseWheelBackwardEvent", self.onMouseWheelBackwardEvent)
+
         self.AddObserver("KeyPressEvent", self.modeSltKeyPress)
 
        
@@ -116,8 +121,9 @@ class HighlightInteractorStyle(vtkInteractorStyleTrackballCamera):
             self.box_func.unRenderAllSelectors()
         # 點刪除範圍，滿足按下delete鍵且點選取模式為True
         elif self.key == "Delete" and self.pointSltMode:
-            self.cut_select_area(self.point_func.total_path_point)
+            self.keep_select_area(self.active_model.poly_data,self.point_func.total_path_point)
             # 清除所有點的視覺化資料、最短路徑資料等
+            self.point_func.unRenderAllSelectors(self.active_model.poly_data)
             
         # 套索刪除範圍，滿足按下delete鍵且套索選取模式為True
         elif self.key == "Delete" and self.lassoSltMode:
@@ -270,6 +276,8 @@ class HighlightInteractorStyle(vtkInteractorStyleTrackballCamera):
         actor.SetMapper(mapper) # 設定Actor的映射器
         self.renderer.AddActor(actor) # 將Actor加入渲染器
         self.GetInteractor().GetRenderWindow().Render() # 渲染視窗
+        self.active_model.poly_data = poly_data # 更新active_model的poly_data
+        self.active_model.actor = actor # 更新active_model的actor
     '''刪除選取範圍'''
     def cut_select_area(self,loop_points):
         # 使用 SelectPolyData 建立封閉區域選取
@@ -308,9 +316,9 @@ class HighlightInteractorStyle(vtkInteractorStyleTrackballCamera):
 
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputData(new_poly_data)
-        mapper.ScalarVisibilityOff()
 
         actor = vtk.vtkActor()
+        actor.GetProperty().SetColor(1.0, 1.0, 1.0)  # 設定顏色為白色
         actor.SetMapper(mapper)
 
         self.active_model.poly_data = new_poly_data
@@ -320,10 +328,10 @@ class HighlightInteractorStyle(vtkInteractorStyleTrackballCamera):
         self.point_func.unRenderAllSelectors(self.active_model.poly_data)
 
     '''保留inlay surface功能'''
-    def keep_select_area(self,loop_points):
+    def keep_select_area(self,poly_data,loop_points):
         # 使用 SelectPolyData 建立封閉區域選取
         select = vtk.vtkSelectPolyData()
-        select.SetInputData(self.active_model.poly_data)
+        select.SetInputData(poly_data)
         select.SetLoop(loop_points)
         select.GenerateSelectionScalarsOn()
         select.SetSelectionModeToClosestPointRegion()
@@ -337,29 +345,25 @@ class HighlightInteractorStyle(vtkInteractorStyleTrackballCamera):
         clip.SetInputConnection(select.GetOutputPort())
         clip.InsideOutOn()
         clip.Update()
-        
-        # 已經trim的poly_data，並且轉成 PolyData型別
-        geometry = vtk.vtkGeometryFilter()
-        geometry.SetInputConnection(clip.GetOutputPort())
-        geometry.Update()
-        
-        
-        
-        new_poly_data = geometry.GetOutput()
+
+        poly_data.DeepCopy(clip.GetOutput()) # 將裁切後的資料複製到原本的poly_data上
+    
 
         # 清除未連接部份
         connect_new_poly_data = vtk.vtkConnectivityFilter()
-        connect_new_poly_data.SetInputData(new_poly_data)
+        connect_new_poly_data.SetInputData(poly_data)
         connect_new_poly_data.SetExtractionModeToLargestRegion()
         connect_new_poly_data.Update()
         new_poly_data = connect_new_poly_data.GetOutput()
 
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputData(new_poly_data)
-        mapper.ScalarVisibilityOff()
-
+        mapper.SetInputData(poly_data)
+    
         actor = vtk.vtkActor()
+        actor.GetProperty().SetColor(1.0, 1.0, 1.0)  # 設定顏色為白色
         actor.SetMapper(mapper)
+        self.renderer.AddActor(actor)
+        self.GetInteractor().GetRenderWindow().Render()
 
         #建立儲存路徑
         current_dir = os.path.dirname(os.path.abspath(__file__)) #取得當前檔案的絕對路徑
@@ -377,8 +381,7 @@ class HighlightInteractorStyle(vtkInteractorStyleTrackballCamera):
         writer.Write()
         self.active_model.poly_data = new_poly_data
         self.active_model.actor = actor
-        self.renderer.AddActor(actor)
-        self.GetInteractor().GetRenderWindow().Render()
+        
 
 
         '''
@@ -419,8 +422,14 @@ class HighlightInteractorStyle(vtkInteractorStyleTrackballCamera):
         self.GetInteractor().GetRenderWindow().Render()
         '''
         # 使用 SelectPolyData 建立封閉區域選取
-        
-        
+    def onMiddleButtonPressEvent(self, obj, event):
+        super().OnMiddleButtonDown()
+    def onMiddleButtonReleaseEvent(self, obj, event):
+        super().OnMiddleButtonUp()
+    def onMouseWheelForwardEvent(self, obj, event):
+        super().OnMouseWheelForward()
+    def onMouseWheelBackwardEvent(self, obj, event):
+        super().OnMouseWheelBackward()
     def onRightButtonDown(self, obj, event):
         super().OnLeftButtonDown()
     def onRightButtonUp(self, obj, event):
@@ -451,7 +460,7 @@ class HighlightInteractorStyle(vtkInteractorStyleTrackballCamera):
             print(f"This is in-visible view")
             self.box_func.onLeftButtonUp(obj,event)
             self.box_func.show_on_visible()
-        elif self.lasso_func and not self.boxSltMode and not self.pointSltMode:
+        elif self.lassoSltMode and not self.boxSltMode and not self.pointSltMode:
             self.lasso_func.interactorSetter(self.interactor)
             self.lasso_func.onLeftButtonRelease(obj,event)
         else:

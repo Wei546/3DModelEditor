@@ -99,6 +99,7 @@ class LassoInteractor(vtk.vtkInteractorStyle): # 繼承vtkInteractorStyle類別
         self.InvokeEvent(vtk.vtkCommand.StartInteractionEvent) # 觸發開始互動事件
         
         super().OnLeftButtonDown() # 呼叫父類別的OnLeftButtonDown方法
+        return
     def onLeftButtonRelease(self,obj, event):
         if self.GetInteractor() is None or not self.Moving:
             return
@@ -114,6 +115,7 @@ class LassoInteractor(vtk.vtkInteractorStyle): # 繼承vtkInteractorStyle類別
         self.InvokeEvent(vtkCommand.EndInteractionEvent) # 觸發結束互動事件
         self.getSelectArea(self.GetPolygonPoints()) # 取得選取範圍
         super().OnLeftButtonUp() # 呼叫父類別的OnLeftButtonUp方法
+        return
     def onMouseMove(self,obj,event):
         if self.GetInteractor() is None or not self.Moving: 
             return
@@ -136,6 +138,7 @@ class LassoInteractor(vtk.vtkInteractorStyle): # 繼承vtkInteractorStyle類別
                 self.DrawPolygon() # 繪製多邊形
         
         super().OnMouseMove() # 呼叫父類別的OnMouseMove方法
+        return
     def SetDrawPolygonPixels(self,drawPolygonPixels): # 設定是否繪製多邊形像素
         self.DrawPolygonPixels = drawPolygonPixels # 設定繪製多邊形像素的狀態
     def getSelectArea(self,select_point): #視覺化取得的點

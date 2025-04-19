@@ -18,28 +18,47 @@ class BoxInteractor(vtkInteractorStyleRubberBand3D):
         self.colorActors = []
         self.RemoveObservers("LeftButtonPressEvent")
         self.RemoveObservers("LeftButtonUpEvent")
+        self.RemoveObservers("RightButtonPressEvent")
+        self.RemoveObservers("RightButtonReleaseEvent")
+        self.RemoveObservers("MiddleButtonPressEvent")
+        self.RemoveObservers("MiddleButtonReleaseEvent")
+        self.RemoveObservers("MiddleButtonForwardEvent")
+        self.RemoveObservers("MiddleButtonBackwardEvent")
+        self.AddObserver("LeftButtonPressEvent", self.onLeftButtonPress)
+        self.AddObserver("LeftButtonReleaseEvent", self.onLeftButtonUp)
         self.AddObserver("RightButtonPressEvent", self.onRightButtonPress)
         self.AddObserver("RightButtonReleaseEvent", self.onRightButtonUp)
+        self.AddObserver("MiddleButtonPressEvent", self.onMiddleButtonDown)
+        self.AddObserver("MiddleButtonReleaseEvent", self.onMiddleButtonUp)
+        self.AddObserver("MiddleButtonForwardEvent", self.onMiddleButtonForward)
+        self.AddObserver("MiddleButtonBackwardEvent", self.onMiddleButtonBackward)
+
+    def onMiddleButtonDown(self,obj,event):
+        return
+    def onMiddleButtonUp(self,obj,event):
+        return
+    def onMiddleButtonForward(self,obj,event):
+        return
+    def onMiddleButtonBackward(self,obj,event):
+        return
     
     def onRightButtonPress(self, obj, event):
-        self.onLeftButtonPress(obj, event)
+        return
     def onRightButtonUp(self, obj, event):
-        self.onLeftButtonUp(obj, event)
-
+        return
     def onLeftButtonPress(self, obj, event):
         start_coord = self.GetInteractor().GetEventPosition()
         self.start_position = [start_coord[0], start_coord[1]]
-        print(f"start_position:{self.start_position}")
-        print(f"enter to box interactor button down")
+        super().OnLeftButtonDown()
+        return
     def onLeftButtonUp(self, obj, event):
         end_coord = self.GetInteractor().GetEventPosition()
         self.end_position = [end_coord[0], end_coord[1]]
-        print(f"end_position:{self.end_position}")
         super().OnLeftButtonUp()
+        return
     def boxSelectArea(self):
         self.boxArea.AreaPick(self.start_position[0], self.start_position[1], self.end_position[0], self.end_position[1], self.renderer)
         self.selection_frustum = self.boxArea.GetFrustum()
-
 
         self.extract_geometry = vtk.vtkExtractGeometry()
         self.extract_geometry.SetInputData(self.poly_data)
@@ -47,7 +66,6 @@ class BoxInteractor(vtkInteractorStyleRubberBand3D):
         self.extract_geometry.Update()
 
         self.selected_poly_data = self.extract_geometry.GetOutput()
-        print(f"Get selected poly data cells:{self.selected_poly_data.GetNumberOfCells()}")
 
         self.geometry_filter = vtk.vtkGeometryFilter()
         self.geometry_filter.SetInputData(self.selected_poly_data)
