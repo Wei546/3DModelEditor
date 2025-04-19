@@ -1,6 +1,6 @@
 from meshlib import mrmeshpy
 
-file_path = "resources/only_merge/merge_inlay_surface_0109.stl"
+file_path = "resources/only_merge/merge_inlay_surface_0075.stl"
 #載入 STL 檔案
 nonClosedMesh = mrmeshpy.loadMesh(file_path)
 
@@ -40,4 +40,4 @@ mrmeshpy.subdivideMesh(shell,subdivSettings)
 mrmeshpy.positionVertsSmoothly(shell,mrmeshpy.getInnerVerts(shell.topology,newFaces))
 
 #儲存修改後的網格
-mrmeshpy.saveMesh(shell, f"for_test_stitched_{original_file_name}.stl")
+mrmeshpy.saveMesh(shell, f"for_test_stitched_better_{original_file_name}.stl")

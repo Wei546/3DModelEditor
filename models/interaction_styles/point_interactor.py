@@ -85,6 +85,10 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
         self.RemoveObservers("RightButtonPressEvent")
         # 移除右鍵放開監聽器
         self.RemoveObservers("RightButtonReleaseEvent")
+        self.RemoveObservers("MiddleButtonPressEvent")
+        self.RemoveObservers("MiddleButtonReleaseEvent")
+        self.RemoveObservers("MiddleButtonForwardEvent")
+        self.RemoveObservers("MiddleButtonBackwardEvent")
         self.AddObserver("RightButtonPressEvent", self.onRightButtonDown)
         self.AddObserver("RightButtonReleaseEvent", self.onRightButtonUp)
         # 中鍵監聽器
@@ -117,7 +121,6 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
         # 給予pick3DCoord資料
         self.pick3DCoord.Pick(clickPos[0],clickPos[1],0,self.renderer)
         self.clickPath = vtk.vtkPoints()
-        print(f"point coord: {self.poly_data.GetPoint(picker.GetPointId())}")
         # 選取輸入物件
         if(picker.GetCellId() != -1):
             
@@ -145,7 +148,7 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
             self.renderer.AddActor(self.sphereActor)
             # undo、消除的列表
             self.sphereActors.append(self.sphereActor)
-            print(f"pathList: {self.pathList}")
+
             for i in range(len(self.pathList)):
                 self.total_path_point.InsertNextPoint(self.poly_data.GetPoint(self.pathList[i]))
                 self.clickPath.InsertNextPoint(self.poly_data.GetPoint(self.pathList[i]))
@@ -155,6 +158,8 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
                 
                 # 投影每個取樣點
                 self.project_line_to_surface(self.poly_data.GetPoint(self.pathList[i]),self.poly_data.GetPoint(self.pathList[i+1]))       
+        super().OnRightButtonDown()
+        return
     # 要把A點->插值->B點放入loop，才能封閉
     # 計算兩點間的直線，平均分配多個點，並且將這些點投影到物體表面
     def project_line_to_surface(self,pt1,pt2,num_samples = 100):
@@ -195,14 +200,12 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
         pt1 = self.poly_data.GetPoint(self.pathList[-1])
         pt2 = self.poly_data.GetPoint(self.pathList[0])
         self.project_line_to_surface(pt1, pt2)
-        print(f"num of total points: {self.total_path_point.GetNumberOfPoints()}")
         self.loop.SetLoop(self.total_path_point)
         
         
 
     # 清除選取輔助樣式；interactor是HightlightInteractorStyle的互動器，renderer是HightlightInteractorStyle的渲染器
-    def unRenderAllSelectors(self,cut_poly_data = None):
-        self.poly_data = cut_poly_data
+    def unRenderAllSelectors(self):
 
         # 清除所有視覺化點
         for actor in self.sphereActors:

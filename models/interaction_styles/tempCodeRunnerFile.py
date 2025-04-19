@@ -1,1 +1,1 @@
-class PolygonInteractor
+on_left_button_release
