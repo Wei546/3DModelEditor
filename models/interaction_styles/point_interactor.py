@@ -205,8 +205,7 @@ class PointInteractor(vtkInteractorStyleTrackballCamera):
         
 
     # 清除選取輔助樣式；interactor是HightlightInteractorStyle的互動器，renderer是HightlightInteractorStyle的渲染器
-    def unRenderAllSelectors(self,cut_poly_data = None):
-        self.poly_data = cut_poly_data
+    def unRenderAllSelectors(self):
 
         # 清除所有視覺化點
         for actor in self.sphereActors:
