@@ -51,7 +51,9 @@ class ModelEditorPage(QMainWindow):
         self.sculptBtn.clicked.connect(self.show_sculpt_page)
         self.modelListWidget.currentRowChanged.connect(self.on_model_selected)
         self.alignFuncBtn.clicked.connect(self.call_align)
-        
+        self.aiFuncBtn.clicked.connect(self.call_ai_func)
+    def call_ai_func(self):
+        print("ai")
     def show_select_page(self):
         # 顯示堆疊窗口
         self.stackedWidget.show()

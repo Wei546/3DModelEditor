@@ -336,8 +336,9 @@ class MeshProcessor:
         final_file = self.process_merged_mesh(merged_file, thickness)  # 處理合併後的網格
         # final_file = self.process_merged_mesh_vtk(merged_file, thickness)
         return final_file                            # 返回最終檔案路徑
-
+'''
 # 示例用法
 if __name__ == "__main__":
     processor = MeshProcessor("resources/0075/data0075down.stl", "resources/0075/ai_data0075down_smooth.stl")  # 創建處理器實例，放入缺陷牙；修復牙檔案路徑
     final_output = processor.process_complete_workflow(thickness=0)  # 執行完整工作流程
+'''

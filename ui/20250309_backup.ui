@@ -233,7 +233,7 @@
 }</string>
      </property>
      <property name="currentIndex">
-      <number>1</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="selectPage">
       <widget class="QWidget" name="verticalLayoutWidget">
@@ -457,7 +457,7 @@
          <x>0</x>
          <y>20</y>
          <width>141</width>
-         <height>71</height>
+         <height>74</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="sculptVerticalLayout">
@@ -481,6 +481,29 @@
           <property name="icon">
            <iconset>
             <normaloff>new_ui_icon/subdivision_256.png</normaloff>new_ui_icon/subdivision_256.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="aiFuncBtn">
+          <property name="font">
+           <font>
+            <family>Times New Roman</family>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">#aiFuncBtn{
+	border: 2px solid #D2B48C;
+    border-radius: 5px;
+	color: rgb(255, 255, 255);
+}</string>
+          </property>
+          <property name="text">
+           <string>AI</string>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>new_ui_icon/smooth_256.png</normaloff>new_ui_icon/smooth_256.png</iconset>
           </property>
          </widget>
         </item>

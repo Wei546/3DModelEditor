@@ -24,26 +24,25 @@ def run_stitching_process(file_path):
     assert holes.size() >= 2
     newFaces = mrmeshpy.FaceBitSet()
     stitchParams = mrmeshpy.StitchHolesParams()
-    stitchParams.metric = mrmeshpy.getMinAreaMetric( shell )
+    stitchParams.metric = mrmeshpy.getMinAreaMetric(shell)
     stitchParams.outNewFaces = newFaces
     mrmeshpy.buildCylinderBetweenTwoHoles(shell,holes[0],holes[1],stitchParams)
 
     # 面細分
     subdivSettings = mrmeshpy.SubdivideSettings()
     subdivSettings.region = newFaces
-    subdivSettings.maxEdgeSplits = 10000000 # could be INT_MAX
+    subdivSettings.maxEdgeSplits = 1000 # could be INT_MAX
     subdivSettings.maxEdgeLen = 1
     mrmeshpy.subdivideMesh(shell,subdivSettings)
 
-    # 平滑新面
-    mrmeshpy.positionVertsSmoothly(shell,mrmeshpy.getInnerVerts(shell.topology,newFaces))
-
-    # 原本的平滑後，再加這段
     remesh_params = mrmeshpy.RemeshSettings()
     remesh_params.region = newFaces
     mrmeshpy.remesh(shell, remesh_params)
-
+    # 平滑新面
+    mrmeshpy.positionVertsSmoothly(shell,mrmeshpy.getInnerVerts(shell.topology,newFaces))
 
     #儲存修改後的網格
     mrmeshpy.saveMesh(shell, f"stitched_{original_file_name}.stl")
     return f"stitched_{original_file_name}.stl"
+
+#run_stitching_process("resources/my_pipeline_inlay/merge_ai_data0075down_smooth.stl")

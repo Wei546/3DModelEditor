@@ -16,7 +16,7 @@ class ForStitchBetter:
         transform_filter.SetInputData(source_only_merge)
         transform_filter.SetTransform(icp)
         transform_filter.Update()
-        self.writeDifferentFile(transform_filter.GetOutput(),f"icp_{self.onlyMerge_model_path}")
+        self.writeDifferentFile(transform_filter.GetOutput(),self.onlyMerge_model_path,"icp_only_merge_")
         print(f"icp complete")
 
 
@@ -39,14 +39,10 @@ class ForStitchBetter:
         mesh_icp_only_merge = o3d.io.read_triangle_mesh(icp_only_merge_path)
         mesh_stitch = o3d.io.read_triangle_mesh(stitch_path)
 
-        mesh_icp_only_merge_t = o3d.t.geometry.TriangleMesh.from_legacy(mesh_icp_only_merge)
-        mesh_stitch_t = o3d.t.geometry.TriangleMesh.from_legacy(mesh_stitch)
+        mesh_icp_only_merge.paint_uniform_color([0.0, 1.0, 0.0])
+        mesh_stitch.paint_uniform_color([1.0, 0.0, 0.0])
+        o3d.visualization.draw_geometries([mesh_icp_only_merge, mesh_stitch])
 
-        result = mesh_stitch_t.boolean_difference(mesh_icp_only_merge_t, tolerance=0.01)
-        result = result.to_legacy()
-        o3d.io.write_triangle_mesh(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ForBetterPatchResult", "boolean_result.stl"), result)
-        print(f"boolean complete")
-    
     def betterFilter(self,stitch_patch):
         #stitch_patch細分
         subdivision_filter = vtk.vtkLoopSubdivisionFilter()
@@ -90,7 +86,7 @@ class ForStitchBetter:
         reader.Update()
         return reader.GetOutput()
 
-    def writeDifferentFile(self,poly_data,save_file_name):
+    def writeDifferentFile(self,poly_data,save_file_name,prefix=""):
         """儲存不同格式的模型"""
         # 取得副檔名
         extension = save_file_name.split('.')[-1].lower()
@@ -109,7 +105,7 @@ class ForStitchBetter:
             os.makedirs(output_file_path)
         # 儲存檔案
         writer = writers[extension]()
-        writer.SetFileName(os.path.join(output_file_path, f"{output_name}.{extension}"))
+        writer.SetFileName(os.path.join(output_file_path, prefix+output_name))
         writer.SetInputData(poly_data)
         writer.Write()
 
@@ -123,13 +119,11 @@ class ForStitchBetter:
         self.writeDifferentFile(only_merge,self.onlyMerge_model_path)
 
 
-        extension_stitch = self.stitch_model_path.split('.')[-1].lower()
-        extension_only_merge = self.onlyMerge_model_path.split('.')[-1].lower()
 
         name_stitch = self.stitch_model_path.split("/")[-1]
         name_only_merge = self.onlyMerge_model_path.split("/")[-1]
-        new_stitch_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ForBetterPatchResult", f"{name_stitch}.{extension_stitch}")
-        new_only_merge_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ForBetterPatchResult", f"{name_only_merge}.{extension_only_merge}")
+        new_stitch_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ForBetterPatchResult", f"{name_stitch}")
+        new_only_merge_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ForBetterPatchResult", f"{name_only_merge}")
 
         only_merge_poly_data = self.readDifferentFile(new_only_merge_path)
         stitch_poly_data = self.readDifferentFile(new_stitch_path)
@@ -138,10 +132,11 @@ class ForStitchBetter:
         #將only_merge模型轉換為vtkPolyData格式
         self.icp(only_merge_poly_data,stitch_poly_data)
 
+        icp_only_merge_poly_data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ForBetterPatchResult", "icp_only_merge_merge_inlay_surface_flip_0075.stl")
 
         #進行布林運算
         # boolean_result = self.booleanDifference(icp_only_merge_poly_data,stitch_poly_data)
-        self.open3dBooleanDifference(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ForBetterPatchResult", "icp_only_merge"),(new_stitch_path))
+        self.open3dBooleanDifference(icp_only_merge_poly_data_path,new_stitch_path)
 
         boolean_result = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ForBetterPatchResult", "boolean_result.stl")
 
